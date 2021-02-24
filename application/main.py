@@ -32,7 +32,7 @@ from collections import defaultdict, namedtuple
 from flask_dropzone import Dropzone
 
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask import Flask, request, send_file, render_template, abort, jsonify, redirect, url_for, make_response
+from flask import Flask, request, send_file, render_template, abort, jsonify, redirect, url_for, make_response, send_from_directory
 from flask_cors import CORS
 from flask_basicauth import BasicAuth
 from flasgger import Swagger
@@ -101,7 +101,7 @@ def process_upload(filewriter, callback_url=None):
     session.commit()
     session.close()
     
-    if DEVELOPMENT:
+    if True:
         t = threading.Thread(target=lambda: worker.process(id, callback_url))
         t.start()
 
@@ -110,10 +110,13 @@ def process_upload(filewriter, callback_url=None):
         q.enqueue(worker.process, id, callback_url)
 
     return id
-    
 
+global ids
+ids = 0
 
 def process_upload_multiple(files, callback_url=None):
+    global ids
+    
     id = utils.generate_id()
     d = utils.storage_dir_for_id(id)
     os.makedirs(d)
@@ -127,13 +130,18 @@ def process_upload_multiple(files, callback_url=None):
         fn = file.filename
         filewriter = lambda fn: file.save(fn)
         filewriter(os.path.join(d, id+"_"+str(file_id)+".ifc"))
-        file_id += 1
-        m.files.append(database.file(id, ''))
+        ids += 1
+        f = database.file(id, '')
+        f.id = ids
+        m.files.append(f)
+        
+    m.id = ids
+    
     
     session.commit()
     session.close()
     
-    if DEVELOPMENT:
+    if True:
         t = threading.Thread(target=lambda: worker.process(id, callback_url))
         t.start()        
     else:
@@ -289,6 +297,7 @@ def get_model(fn):
         return response
     else:
         return send_file(path)
+    
 
 """
 # Create a file called routes.py with the following

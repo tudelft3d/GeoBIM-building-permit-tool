@@ -37,7 +37,7 @@ DEVELOPMENT = os.environ.get('environment', 'production').lower() == 'developmen
 if DEVELOPMENT:
     engine = create_engine('sqlite:///ifc-pipeline.db', connect_args={'check_same_thread': False})
 else:
-    engine = create_engine('postgresql://postgres:postgres@%s:5432/bimsurfer2' % os.environ.get('POSTGRES_HOST', 'localhost'))
+    engine = create_engine('postgresql://postgres:hoi123@%s:5432/bimsurfer2' % os.environ.get('POSTGRES_HOST', 'localhost'))
     
 Session = sessionmaker(bind=engine)
 
@@ -84,6 +84,7 @@ class file(Base, Serializable):
         self.filename = filename
         
         self.model_id = Column(Integer, ForeignKey('models.id'))
+        
 
 
 def initialize():
