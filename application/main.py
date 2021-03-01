@@ -32,7 +32,7 @@ from collections import defaultdict, namedtuple
 from flask_dropzone import Dropzone
 
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask import Flask, request, send_file, render_template, abort, jsonify, redirect, url_for, make_response, send_from_directory
+from flask import Flask, request, send_file, render_template, abort, jsonify, redirect, url_for, make_response
 from flask_cors import CORS
 from flask_basicauth import BasicAuth
 from flasgger import Swagger
@@ -49,12 +49,10 @@ dropzone = Dropzone(application)
 
 DEVELOPMENT = os.environ.get('environment', 'production').lower() == 'development'
 
-
 if not DEVELOPMENT and os.path.exists("/version"):
     PIPELINE_POSTFIX = "." + open("/version").read().strip()
 else:
     PIPELINE_POSTFIX = ""
-
 
 if not DEVELOPMENT:
     # In some setups this proved to be necessary for url_for() to pick up HTTPS
@@ -88,67 +86,56 @@ def get_main():
     return render_template('index.html')
 
 
-
 def process_upload(filewriter, callback_url=None):
     id = utils.generate_id()
     d = utils.storage_dir_for_id(id)
     os.makedirs(d)
-    
-    filewriter(os.path.join(d, id+".ifc"))
-    
+
+    filewriter(os.path.join(d, id + ".ifc"))
+
     session = database.Session()
     session.add(database.model(id, ''))
     session.commit()
     session.close()
-    
-    if True:
+
+    if DEVELOPMENT:
         t = threading.Thread(target=lambda: worker.process(id, callback_url))
         t.start()
 
-        
+
     else:
         q.enqueue(worker.process, id, callback_url)
 
     return id
 
-global ids
-ids = 0
 
 def process_upload_multiple(files, callback_url=None):
-    global ids
-    
     id = utils.generate_id()
     d = utils.storage_dir_for_id(id)
     os.makedirs(d)
-   
+
     file_id = 0
     session = database.Session()
-    m = database.model(id, '')   
+    m = database.model(id, '')
     session.add(m)
-  
+
     for file in files:
         fn = file.filename
         filewriter = lambda fn: file.save(fn)
-        filewriter(os.path.join(d, id+"_"+str(file_id)+".ifc"))
-        ids += 1
-        f = database.file(id, '')
-        f.id = ids
-        m.files.append(f)
-        
-    m.id = ids
-    
-    
+        filewriter(os.path.join(d, id + "_" + str(file_id) + ".ifc"))
+        file_id += 1
+        m.files.append(database.file(id, ''))
+
     session.commit()
     session.close()
-    
-    if True:
+
+    if DEVELOPMENT:
         t = threading.Thread(target=lambda: worker.process(id, callback_url))
-        t.start()        
+        t.start()
     else:
         q.enqueue(worker.process, id, callback_url)
 
     return id
-
 
 
 @application.route('/', methods=['POST'])
@@ -170,19 +157,18 @@ def put_main():
         description: redirect
     """
     ids = []
-   
+
     files = []
     for key, f in request.files.items():
         if key.startswith('file'):
             file = f
-            files.append(file)    
+            files.append(file)
 
-       
     id = process_upload_multiple(files)
-    url = url_for('check_viewer', id=id) 
+    url = url_for('check_viewer', id=id)
 
     if request.accept_mimetypes.accept_json:
-        return jsonify({"url":url})
+        return jsonify({"url": url})
     else:
         return redirect(url)
 
@@ -191,9 +177,9 @@ def put_main():
 def check_viewer(id):
     if not utils.validate_id(id):
         abort(404)
-    return render_template('progress.html', id=id)    
-    
-    
+    return render_template('progress.html', id=id)
+
+
 @application.route('/pp/<id>', methods=['GET'])
 def get_progress(id):
     if not utils.validate_id(id):
@@ -207,22 +193,23 @@ def get_progress(id):
 @application.route('/log/<id>.<ext>', methods=['GET'])
 def get_log(id, ext):
     log_entry_type = namedtuple('log_entry_type', ("level", "message", "instance", "product"))
-    
+
     if ext not in {'html', 'json'}:
         abort(404)
-        
+
     if not utils.validate_id(id):
         abort(404)
     logfn = os.path.join(utils.storage_dir_for_id(id), "log.json")
     if not os.path.exists(logfn):
         abort(404)
-            
+
     if ext == 'html':
         log = []
         for ln in open(logfn):
             l = ln.strip()
             if l:
-                log.append(json.loads(l, object_hook=lambda d: log_entry_type(*(d.get(k, '') for k in log_entry_type._fields))))
+                log.append(json.loads(l, object_hook=lambda d: log_entry_type(
+                    *(d.get(k, '') for k in log_entry_type._fields))))
         return render_template('log.html', id=id, log=log)
     else:
         return send_file(logfn, mimetype='text/plain')
@@ -233,12 +220,13 @@ def get_viewer(id):
     if not utils.validate_id(id):
         abort(404)
     d = utils.storage_dir_for_id(id)
-    
-    ifc_files = [os.path.join(d, name) for name in os.listdir(d) if os.path.isfile(os.path.join(d, name)) and name.endswith('.ifc')]
-    
+
+    ifc_files = [os.path.join(d, name) for name in os.listdir(d) if
+                 os.path.isfile(os.path.join(d, name)) and name.endswith('.ifc')]
+
     if len(ifc_files) == 0:
         abort(404)
-    
+
     failedfn = os.path.join(utils.storage_dir_for_id(id), "failed")
     if os.path.exists(failedfn):
         return render_template('error.html', id=id)
@@ -247,9 +235,9 @@ def get_viewer(id):
         glbfn = ifc_fn.replace(".ifc", ".glb")
         if not os.path.exists(glbfn):
             abort(404)
-            
+
     n_files = len(ifc_files) if "_" in ifc_files[0] else None
-                    
+
     return render_template(
         'viewer.html',
         id=id,
@@ -272,32 +260,31 @@ def get_model(fn):
           description: Model id and part extension
           example: BSESzzACOXGTedPLzNiNklHZjdJAxTGT.glb
     """
-    
- 
+
     id, ext = fn.split('.', 1)
-    
+
     if not utils.validate_id(id):
         abort(404)
-  
+
     if ext not in {"xml", "svg", "glb", "unoptimized.glb"}:
         abort(404)
-   
-    path = utils.storage_file_for_id(id, ext)    
+
+    path = utils.storage_file_for_id(id, ext)
 
     if not os.path.exists(path):
         abort(404)
-        
+
     if os.path.exists(path + ".gz"):
         import mimetypes
         response = make_response(
-            send_file(path + ".gz", 
-                mimetype=mimetypes.guess_type(fn, strict=False)[0])
+            send_file(path + ".gz",
+                      mimetype=mimetypes.guess_type(fn, strict=False)[0])
         )
         response.headers['Content-Encoding'] = 'gzip'
         return response
     else:
         return send_file(path)
-    
+
 
 """
 # Create a file called routes.py with the following
