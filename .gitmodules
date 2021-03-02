@@ -1,3 +1,6 @@
 [submodule "application/bimsurfer"]
 	path = application/bimsurfer
 	url = https://github.com/AECgeeks/BIMsurfer2
+[submodule "application/GEOBIM_Tool"]
+	path = application/GEOBIM_Tool
+	url = https://github.com/jliempt/GEOBIM_Tool.git

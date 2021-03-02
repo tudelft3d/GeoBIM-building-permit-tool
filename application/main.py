@@ -49,6 +49,8 @@ dropzone = Dropzone(application)
 
 DEVELOPMENT = os.environ.get('environment', 'production').lower() == 'development'
 
+DEVELOPMENT = True
+
 if not DEVELOPMENT and os.path.exists("/version"):
     PIPELINE_POSTFIX = "." + open("/version").read().strip()
 else:
@@ -138,7 +140,7 @@ def process_upload_multiple(files, callback_url=None):
     return id
 
 
-@application.route('/', methods=['POST'])
+@application.route('/upload_ifc', methods=['POST'])
 def put_main():
     """
     Upload model
@@ -161,8 +163,11 @@ def put_main():
     files = []
     for key, f in request.files.items():
         if key.startswith('file'):
-            file = f
-            files.append(file)
+            if f.filename[-4:] != ".ifc":
+                return "Invalid file", 400
+            print("==============")
+            print(f)
+            files.append(f)
 
     id = process_upload_multiple(files)
     url = url_for('check_viewer', id=id)
