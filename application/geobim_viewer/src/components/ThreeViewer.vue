@@ -26,7 +26,8 @@ import {
 	UniformsUtils,
 	TextureLoader,
 	Sprite,
-	SpriteMaterial
+	SpriteMaterial,
+	AxesHelper
 } from 'three';
 
 import Vue from 'vue'
@@ -43,11 +44,18 @@ export default class ThreeViewer extends Vue {
 
 	scene: Scene;
 	renderer: WebGLRenderer;
+	camera: PerspectiveCamera;
+	controls: OrbitControls;
+	pLight: PointLight;
+	dirLight: DirectionalLight;
+	ambLight: AmbientLight;
+
+	needsRerender = 0;
 
 	initScene() {
 
 		this.scene = new Scene();
-		this.scene.background = new Color( 0xffffff );
+		this.scene.background = new Color( 0xeeeeee );
 
 		const canvas = document.getElementById( "canvas" );
 
@@ -60,13 +68,69 @@ export default class ThreeViewer extends Vue {
 
 		canvas!.appendChild( this.renderer.domElement );
 
-		// this.renderer.render( this.scene, this.camera );
+		this.camera = new PerspectiveCamera( 50, canvas!.clientWidth / canvas!.clientHeight, 2, 30000 );
+		this.camera.position.set( 0, 20, 0 );
+
+		this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+		this.controls.screenSpacePanning = false;
+		// this.controls.enableDamping = true;
+		// this.controls.dampingFactor = 0.15;
+		this.controls.minDistance = 0;
+		this.controls.maxDistance = 18000;
+		this.controls.maxPolarAngle = 0.8;
+		this.controls.mouseButtons = {
+			LEFT: MOUSE.PAN,
+			MIDDLE: MOUSE.DOLLY,
+			RIGHT: MOUSE.ROTATE
+		};
+		this.controls.touches = {
+			ONE: TOUCH.ROTATE,
+			TWO: TOUCH.DOLLY_PAN
+		};
+
+		this.controls.addEventListener( "change", () => {
+
+			this.needsRerender = 1;
+
+			this.renderScene();
+
+		} );
+
+        const dirLight = new DirectionalLight( 0xffffff, 0.3 );
+		const ambLight = new AmbientLight( 0x404050 );
+		this.scene.add( dirLight );
+        this.scene.add( ambLight );
+
+		const axesHelper = new AxesHelper( 5 );
+		this.scene.add( axesHelper );
+
+		this.needsRerender = 1;
+
+		this.renderScene();
 		
 	}
 
 	mounted() {
 
 		this.initScene();
+
+	}
+
+	renderScene() {
+
+		requestAnimationFrame( this.renderScene );
+
+		if ( this.needsRerender > 0 ) {
+
+			this.needsRerender --;
+
+			// this.controls.update();
+			this.camera.updateMatrixWorld();
+
+			this.renderer.render( this.scene, this.camera );
+
+
+		}
 
 	}
 
@@ -87,8 +151,6 @@ export default class ThreeViewer extends Vue {
 		}            
 		
 		loader.load( url, gltf => {
-
-				console.log( "hoi" );
 
 				this.scene.add(gltf.scene);
 
