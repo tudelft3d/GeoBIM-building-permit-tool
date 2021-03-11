@@ -165,12 +165,10 @@ def put_main():
         if key.startswith('file'):
             if f.filename[-4:] != ".ifc":
                 return "Invalid file", 400
-            print("==============")
-            print(f)
             files.append(f)
 
     id = process_upload_multiple(files)
-    url = url_for('check_viewer', id=id)
+    url = url_for('get_progress', id=id)
 
     if request.accept_mimetypes.accept_json:
         return jsonify({"url": url})
