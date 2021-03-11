@@ -40,6 +40,7 @@ from flasgger import Swagger
 import utils
 import worker
 import database
+import GEOBIM_Tool as geobim
 
 application = Flask(__name__)
 dropzone = Dropzone(application)
@@ -82,6 +83,9 @@ if not DEVELOPMENT:
 
     q = Queue(connection=Redis(host=os.environ.get("REDIS_HOST", "localhost")), default_timeout=3600)
 
+# geobim.init()
+app = geobim.application()
+# app.start()
 
 @application.route('/', methods=['GET'])
 def get_main():
@@ -124,9 +128,11 @@ def process_upload_multiple(files, callback_url=None):
     for file in files:
         fn = file.filename
         filewriter = lambda fn: file.save(fn)
-        filewriter(os.path.join(d, id + "_" + str(file_id) + ".ifc"))
+        path = os.path.join(d, id + "_" + str(file_id) + ".ifc")
+        filewriter(path)
         file_id += 1
         m.files.append(database.file(id, ''))
+        app.load(path)
 
     session.commit()
     session.close()
