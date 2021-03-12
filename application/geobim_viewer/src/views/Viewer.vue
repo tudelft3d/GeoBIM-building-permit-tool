@@ -1,19 +1,22 @@
 <template>
 
   <div class="viewer">
+    
+    <div class="columns is-fullheight">
+      <div class="column is-2 is-sidebar-menu" id="sidebar">
 
-    <nav
+
+      </div>
+
+
+      <div class="column is-main-content">
+
+            <nav
       class="navbar is-light is-size-7"
       role="navigation"
       aria-label="flask navigation"
     >
-      <div class="navbar-brand">
-        <router-link
-          to="/viewer"
-          class="navbar-item"
-        >
-        </router-link>
-      </div>
+
       <div
         class="navbar-menu"
       >
@@ -25,14 +28,16 @@
               File
             </a>
             <div class="navbar-dropdown">
-              <label class="file-label">
-                <input class="file-input" type="file" name="resume" ref="ifcFiles" @change="selectedFile">
-                Upload IFC
-                </label>
+              <a class="navbar-item">
 
-                <a class="navbar-item" @click="hoi()">
+                <input class="file-input" type="file" ref="ifcFiles" @change="selectedFile">
+                Upload IFC
+
+              </a>
+
+              <a class="navbar-item" @click="hoi()">
                 Pick
-                </a>
+              </a>
               
             </div>
 
@@ -42,7 +47,7 @@
             class="navbar-item has-dropdown is-hoverable"
           >
             <a class="navbar-link">
-              File
+              View
             </a>
             <div class="navbar-dropdown">
 
@@ -193,26 +198,7 @@
 
       </div>
     </nav>
-    
-    <div class="columns is-fullheight">
-      <div class="column is-2 is-sidebar-menu" id="sidebar">
 
-        <div class="file">
-          <label class="file-label">
-            <input class="file-input" type="file" name="resume" ref="ifcFiles" @change="selectedFile">
-            <span class="file-cta">
-              <span class="file-label">
-                Upload IFC
-              </span>
-            </span>
-          </label>
-        </div>
-
-      </div>
-
-
-
-      <div class="column is-main-content">
         <ThreeViewer
           ref="threeviewer"
         />

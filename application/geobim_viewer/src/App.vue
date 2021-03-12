@@ -16,11 +16,15 @@
         class="navbar-menu"
       >
         <div class="navbar-start">
+          <div class="navbar-item">
+          <span class="logo-text">GeoBIM Tool</span>
+          </div>
           <div class="navbar-item tags has-addons">
-            <span class="tag">v0.1</span>
-            <a
-              class="tag is-danger"
-            >beta</a>
+            
+            <span class="tag">v2.0</span>
+            <div
+              class="tag is-blue"
+            >beta</div>
           </div>
         </div>
         <div class="navbar-end">
