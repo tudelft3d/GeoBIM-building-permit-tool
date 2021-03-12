@@ -27,7 +27,6 @@
             <div class="navbar-dropdown">
               <label class="file-label">
                 <input class="file-input" type="file" name="resume" ref="ifcFiles" @change="selectedFile">
-
                 Upload IFC
                 </label>
 
@@ -63,7 +62,7 @@
 
           </div>
 
-                    <div
+          <div
             class="navbar-item has-dropdown is-hoverable"
           >
             <a class="navbar-link">
@@ -167,7 +166,7 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="wkt()">
                 Write floor footprint to WKT
                 </a>
               
@@ -228,6 +227,9 @@
 import { Component, Vue } from 'vue-property-decorator';
 import ThreeViewer from '@/components/ThreeViewer.vue';
 import axios from 'axios';
+import VueSimpleAlert from "vue-simple-alert";
+
+Vue.use(VueSimpleAlert);
 
 @Component({
   components: {
@@ -272,6 +274,56 @@ export default class Viewer extends Vue {
 
   hoi() {
     console.log("hoi");
+  }
+
+  async wkt() {
+
+      const values = await this.$fire({
+
+        title: 'Footprint WKT',
+        html:
+          '<input id="swal-input1" class="swal2-input" placeholder="Floor number">' +
+          '<input id="swal-input2" class="swal2-input" placeholder="Output file name">',
+        focusConfirm: false,
+        preConfirm: () => {
+          return {
+            "floor": document.getElementById('swal-input1').value,
+            "filename": document.getElementById('swal-input2').value
+          }
+        }
+        
+    })
+
+    fetch( this.baseURL + "/analysis/" + "/wkt/" + values.value.floor )
+      .then(function(r) { return r.json(); })
+      .then(function(res: any) {
+
+        console.log( res.wkt );
+
+        this.downloadFile( res.wkt, values.value.filename, "text/plain")
+
+    }.bind( this ));
+
+  }
+
+  downloadFile( data: any, filename: string, type: string ) {
+
+    const file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        const a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+
   }
 
   getModelInfo( id: string ) {

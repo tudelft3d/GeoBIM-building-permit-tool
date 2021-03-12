@@ -295,6 +295,12 @@ def get_model(fn):
         return send_file(path)
 
 
+@application.route('/analysis/wkt/<floornumber>', methods=['GET'])
+def get_wkt(floornumber):
+    result = app.footprintWKT(floornumber)
+    return jsonify({"wkt": result})
+
+
 """
 # Create a file called routes.py with the following
 # example content to add application-specific routes
