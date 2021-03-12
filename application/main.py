@@ -85,7 +85,6 @@ if not DEVELOPMENT:
 
 # geobim.init()
 app = geobim.application()
-# app.start()
 
 @application.route('/', methods=['GET'])
 def get_main():
@@ -296,10 +295,14 @@ def get_model(fn):
 
 
 @application.route('/analysis/wkt/<floornumber>', methods=['GET'])
-def get_wkt(floornumber):
+def floor_wkt(floornumber):
     result = app.footprintWKT(floornumber)
     return jsonify({"wkt": result})
 
+@application.route('/analysis/overhangsingle/<floornumber>', methods=['GET'])
+def overhangsingle(floornumber):
+    result = app.OverhangOneFloor(floornumber)
+    return jsonify(result)
 
 """
 # Create a file called routes.py with the following

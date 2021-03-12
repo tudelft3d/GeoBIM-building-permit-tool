@@ -126,7 +126,7 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="overhangSingle()">
                 Single floor overhang
                 </a>
 
@@ -303,6 +303,37 @@ export default class Viewer extends Vue {
         this.downloadFile( res.wkt, values.value.filename, "text/plain")
 
     }.bind( this ));
+
+  }
+
+  async overhangSingle() {
+
+    const values = await this.$fire({
+
+      title: 'Footprint WKT',
+      html:
+        '<input id="swal-input1" class="swal2-input" placeholder="Floor number">' +
+        '<input id="swal-input2" class="swal2-input" placeholder="Output file name">',
+      focusConfirm: false,
+      preConfirm: () => {
+        return {
+          "floor": document.getElementById('swal-input1').value,
+          "filename": document.getElementById('swal-input2').value
+        }
+      }
+        
+    })
+
+    fetch( this.baseURL + "/analysis/" + "/overhangsingle/" + values.value.floor )
+      .then(function(r) { return r.json(); })
+      .then(function(res: any) {
+
+        console.log( res );
+
+        // this.downloadFile( res.wkt, values.value.filename, "text/plain")
+
+    }.bind( this ));
+
 
   }
 
