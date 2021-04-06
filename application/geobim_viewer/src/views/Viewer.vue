@@ -131,7 +131,7 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="overhangSingle()">
+                <a class="navbar-item" @click="overhangSingleSettings()">
                 Single floor overhang
                 </a>
 
@@ -171,7 +171,7 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="wkt()">
+                <a class="navbar-item" @click="wktFootprintSettings">
                 Write floor footprint to WKT
                 </a>
               
@@ -197,6 +197,45 @@
 
 
       </div>
+    <b-modal
+      v-model="showModal"
+      has-modal-card
+    >
+      <div class="modal-card" modal-background-background-color>
+        <header class="modal-card-head">
+          <p class="modal-card-title">
+            {{ modalParams.title }}
+            
+          </p>
+          <button
+            class="delete"
+            aria-label="close"
+            @click="showModal = false"
+          />
+        </header>
+        <section class="modal-card-body">
+          <div class="content">
+
+            {{ modalParams.info }}
+
+            <b-field v-for="(input, label) in modalParams.fields" v-bind:key="(input, label)" v-bind:label="label">
+
+              <b-input v-model="modalParams.input[ input ]"></b-input>
+            </b-field>
+
+            <b-field label="Result">
+              <textarea class="textarea" :value="modalParams.result"></textarea>
+            </b-field>
+
+            <div class="buttons">
+              <b-button type="is-light" @click="analysisCall(modalParams.function)">OK</b-button>
+              <b-button type="is-light" v-if="modalParams.result.length != 0" @click="downloadFile">Save result</b-button>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </b-modal>
     </nav>
 
         <ThreeViewer
@@ -213,9 +252,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import ThreeViewer from '@/components/ThreeViewer.vue';
 import axios from 'axios';
-import VueSimpleAlert from "vue-simple-alert";
-
-Vue.use(VueSimpleAlert);
 
 @Component({
   components: {
@@ -226,6 +262,9 @@ Vue.use(VueSimpleAlert);
 export default class Viewer extends Vue {
 
   baseURL = "http://127.0.0.1:5000/";
+  showModal = false;
+  filename = "result.txt";
+  modalParams = { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {} };
 
   poll( url: string ) {
 
@@ -258,72 +297,77 @@ export default class Viewer extends Vue {
 
   }
 
-  hoi() {
-    console.log("hoi");
+  data() {
+    
+    return {
+
+      title: "",
+
+    };
+    
   }
 
-  async wkt() {
+  analysisCall( functionName: string ) {
 
-      const values = await this.$fire({
+    this[ functionName ]();
 
-        title: 'Footprint WKT',
-        html:
-          '<input id="swal-input1" class="swal2-input" placeholder="Floor number">' +
-          '<input id="swal-input2" class="swal2-input" placeholder="Output file name">',
-        focusConfirm: false,
-        preConfirm: () => {
-          return {
-            "floor": document.getElementById('swal-input1').value,
-            "filename": document.getElementById('swal-input2').value
-          }
-        }
-        
-    })
+  }
 
-    fetch( this.baseURL + "/analysis/" + "/wkt/" + values.value.floor )
+  wktFootprintSettings() {
+
+    this.modalParams.title = "Floor footprint WKT";
+    this.modalParams.fields = {"Floor number": "floorNumber"}
+    this.modalParams.function = "wktFootprint";
+    this.modalParams.info = "Returns the footprint of the selected floor in WKT (well-known text) format."
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.showModal = true;
+
+  }
+
+  wktFootprint() {
+
+    fetch( this.baseURL + "/analysis/" + "/wkt/" + this.modalParams.input[ "floorNumber" ] )
       .then(function(r) { return r.json(); })
       .then(function(res: any) {
 
         console.log( res.wkt );
-
-        this.downloadFile( res.wkt, values.value.filename, "text/plain")
+        this.modalParams.result = res.wkt;
 
     }.bind( this ));
 
   }
 
-  async overhangSingle() {
+  overhangSingleSettings() {
 
-    const values = await this.$fire({
+    this.modalParams.title = "Single floor overhang";
+    this.modalParams.fields = {"Floor number": "floorNumber"}
+    this.modalParams.function = "overhangSingle";
+    this.modalParams.info = "";
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.showModal = true;
 
-      title: 'Footprint WKT',
-      html:
-        '<input id="swal-input1" class="swal2-input" placeholder="Floor number">' +
-        '<input id="swal-input2" class="swal2-input" placeholder="Output file name">',
-      focusConfirm: false,
-      preConfirm: () => {
-        return {
-          "floor": document.getElementById('swal-input1').value,
-          "filename": document.getElementById('swal-input2').value
-        }
-      }
-        
-    })
+  }
 
-    fetch( this.baseURL + "/analysis/" + "/overhangsingle/" + values.value.floor )
+  overhangSingle() {
+
+    fetch( this.baseURL + "/analysis/" + "/overhangsingle/" + this.modalParams.input[ "floorNumber" ] )
       .then(function(r) { return r.json(); })
       .then(function(res: any) {
 
         console.log( res );
+        this.modalParams.result = "floorname: " + res.floorname + "\n" + "low_overhang: " + res.low_overhang + "\n" + "up_overhang: " + res.up_overhang;
 
-        // this.downloadFile( res.wkt, values.value.filename, "text/plain")
+        
 
     }.bind( this ));
 
-
   }
 
-  downloadFile( data: any, filename: string, type: string ) {
+  downloadFile() {
+
+    const data = this.modalParams.result;
+    const filename = this.filename;
+    const type = "text/plain";
 
     const file = new Blob([data], {type: type});
     if (window.navigator.msSaveOrOpenBlob) // IE10+
@@ -402,8 +446,6 @@ export default class Viewer extends Vue {
     .catch(console.error);
 
   }
-
-
 
 }
 
