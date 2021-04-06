@@ -138,7 +138,7 @@ export default class ThreeViewer extends Vue {
 
 		const loader = new GLTFLoader();
 		
-		// var isIE11 = !!window.MSInputMethodContext && !!document.documentMode;
+		// const isIE11 = !!window.MSInputMethodContext && !!document.documentMode;
 		const isIE11 = false;
 		
 		if (!isIE11) {
@@ -156,97 +156,97 @@ export default class ThreeViewer extends Vue {
 
 				console.log( gltf );
 
-				// var createdLines = {};
-				// var geometryCount = {};
+				const createdLines = {};
+				const geometryCount = {};
 
-				// gltf.scene.traverse((obj) => {
-				// 	if (obj.isMesh && obj.geometry) {
-				// 		geometryCount[obj.geometry.id] = 1;
-				// 	}
-				// });
+				gltf.scene.traverse((obj) => {
+					if (obj.isMesh && obj.geometry) {
+						geometryCount[obj.geometry.id] = 1;
+					}
+				});
 
-				// // @todo we'll make this more adaptive and pregenerate the lines in gltf.
-				// var createLines = Object.keys(geometryCount).length <= 500;
-				// if (!createLines) {
-				// 	console.log("not creating line geometries due to model size");
-				// }
+				// @todo we'll make this more adaptive and pregenerate the lines in gltf.
+				const createLines = Object.keys(geometryCount).length <= 500;
+				if (!createLines) {
+					console.log("not creating line geometries due to model size");
+				}
 
-				// gltf.scene.traverse((obj) => {
-				// 	if (obj.isMesh && obj.geometry) {
-				// 		self.originalMaterials.set(obj.id, obj.material);
-				// 		obj.material.side = THREE.DoubleSide;
-				// 		obj.material.depthWrite = !obj.material.transparent;
+				gltf.scene.traverse((obj) => {
+					if (obj.isMesh && obj.geometry) {
+						self.originalMaterials.set(obj.id, obj.material);
+						obj.material.side = THREE.DoubleSide;
+						obj.material.depthWrite = !obj.material.transparent;
 
-				// 		if (createLines) {
-				// 			var edges;
-				// 			if (obj.geometry.id in createdLines) {
-				// 				edges = createdLines[obj.geometry.id];
-				// 			} else {
-				// 				edges = createdLines[obj.geometry.id] = new THREE.EdgesGeometry(obj.geometry);
-				// 			}
-				// 			var line = new THREE.LineSegments(edges, lineMaterial);
-				// 			obj.add(line);
-				// 		}                            
-				// 	}
+						if (createLines) {
+							const edges = undefined;
+							if (obj.geometry.id in createdLines) {
+								edges = createdLines[obj.geometry.id];
+							} else {
+								edges = createdLines[obj.geometry.id] = new THREE.EdgesGeometry(obj.geometry);
+							}
+							const line = new THREE.LineSegments(edges, lineMaterial);
+							obj.add(line);
+						}                            
+					}
 
-				// 	if (obj.name.startsWith("product-")) {
-				// 		const id2 = obj.name.substr(8, 36);
-				// 		const g = Utils.CompressGuid(id2);
-				// 		self.allIds.push(g);
-				// 		self.nameToId.set(g, obj.id);
-				// 		self.nameToId.set(obj.name, obj.id);
-				// 	}
-				// });
+					if (obj.name.startsWith("product-")) {
+						const id2 = obj.name.substr(8, 36);
+						const g = Utils.CompressGuid(id2);
+						self.allIds.push(g);
+						self.nameToId.set(g, obj.id);
+						self.nameToId.set(obj.name, obj.id);
+					}
+				});
 
-				// if (first) {
+				if (first) {
 
-				// 	var boundingBox = new THREE.Box3();
-				// 	boundingBox.setFromObject(scene);
-				// 	var center = new THREE.Vector3();
-				// 	boundingBox.getCenter(center);
-				// 	controls.target = center;
+					const boundingBox = new THREE.Box3();
+					boundingBox.setFromObject(scene);
+					const center = new THREE.Vector3();
+					boundingBox.getCenter(center);
+					controls.target = center;
 					
-				// 	// An initial for viewer distance based on the diagonal so that
-				// 	// we have a camera matrix for a more detailed calculation.
-				// 	var viewDistance = boundingBox.getSize(new THREE.Vector3()).length();
-				// 	camera.position.copy(center.clone().add(
-				// 		new THREE.Vector3(0.5, 0.25, 1).normalize().multiplyScalar(viewDistance)
-				// 	));
+					// An initial for viewer distance based on the diagonal so that
+					// we have a camera matrix for a more detailed calculation.
+					const viewDistance = boundingBox.getSize(new THREE.Vector3()).length();
+					camera.position.copy(center.clone().add(
+						new THREE.Vector3(0.5, 0.25, 1).normalize().multiplyScalar(viewDistance)
+					));
 					
-				// 	// Make sure all matrices get calculated.
-				// 	camera.near = viewDistance / 100;
-				// 	camera.far = viewDistance * 100;
-				// 	controls.update();
-				// 	camera.updateProjectionMatrix();
-				// 	camera.updateMatrixWorld();
+					// Make sure all matrices get calculated.
+					camera.near = viewDistance / 100;
+					camera.far = viewDistance * 100;
+					controls.update();
+					camera.updateProjectionMatrix();
+					camera.updateMatrixWorld();
 					
-				// 	var fovFactor = Math.tan(camera.fov / 2 / 180 * 3.141592653);
-				// 	var outside = 0.;
+					const fovFactor = Math.tan(camera.fov / 2 / 180 * 3.141592653);
+					const outside = 0.;
 					
-				// 	// Calculate distance between projected bounding box coordinates and view frustrum boundaries
-				// 	var largestAngle = 0.;
-				// 	for (var i = 0; i < 8; i++) {
-				// 		const v = new THREE.Vector3(
-				// 			i & 1 ? boundingBox.min.x : boundingBox.max.x,
-				// 			i & 2 ? boundingBox.min.y : boundingBox.max.y,
-				// 			i & 4 ? boundingBox.min.z : boundingBox.max.z
-				// 		);
-				// 		v.applyMatrix4(camera.matrixWorldInverse);
-				// 		// largestAngle = Math.max(largestAngle, Math.atan2(v.x / camera.aspect, -v.z), Math.atan2(v.y, -v.z));
-				// 		outside = Math.max(outside, Math.abs(v.x / camera.aspect) - fovFactor * -v.z, Math.abs(v.y) - fovFactor * -v.z);
-				// 		console.log(v.x / camera.aspect, fovFactor * -v.z);
-				// 	}
+					// Calculate distance between projected bounding box coordinates and view frustrum boundaries
+					const largestAngle = 0.;
+					for (const i = 0; i < 8; i++) {
+						const v = new THREE.Vector3(
+							i & 1 ? boundingBox.min.x : boundingBox.max.x,
+							i & 2 ? boundingBox.min.y : boundingBox.max.y,
+							i & 4 ? boundingBox.min.z : boundingBox.max.z
+						);
+						v.applyMatrix4(camera.matrixWorldInverse);
+						// largestAngle = Math.max(largestAngle, Math.atan2(v.x / camera.aspect, -v.z), Math.atan2(v.y, -v.z));
+						outside = Math.max(outside, Math.abs(v.x / camera.aspect) - fovFactor * -v.z, Math.abs(v.y) - fovFactor * -v.z);
+						console.log(v.x / camera.aspect, fovFactor * -v.z);
+					}
 					
-				// 	viewDistance += outside * 2;
+					viewDistance += outside * 2;
 					
-				// 	camera.position.copy(center.clone().add(
-				// 		new THREE.Vector3(0.5, 0.25, 1).normalize().multiplyScalar(viewDistance)
-				// 	));
+					camera.position.copy(center.clone().add(
+						new THREE.Vector3(0.5, 0.25, 1).normalize().multiplyScalar(viewDistance)
+					));
 
-				// 	controls.update();
+					controls.update();
 					
-				// 	first = false;
-				// }
+					first = false;
+				}
 				
 				// self.fire("loaded");
 			},
