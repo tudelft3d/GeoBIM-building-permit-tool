@@ -85,6 +85,7 @@ if not DEVELOPMENT:
 
 # geobim.init()
 app = geobim.application()
+# app.start()
 
 @application.route('/', methods=['GET'])
 def get_main():
