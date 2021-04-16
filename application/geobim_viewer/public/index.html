@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>IfcOpenShell viewer</title>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="main.css"/>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  </head>
+  <body>
+    <noscript>
+      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+
+
+
+<script type="text/javascript" src="./bimsurfer/bimsurfer/lib/three.js"></script>
+<script type="text/javascript" src="./bimsurfer/bimsurfer/lib/OrbitControls.js"></script>
+<script type="text/javascript" src="./bimsurfer/bimsurfer/lib/GLTFLoader.js"></script>
+<script type="text/javascript" src="./bimsurfer/bimsurfer/lib/DRACOLoader.js"></script>
+
+<script type="text/javascript" src="./bimsurfer/bimsurfer/lib/svg-pan-zoom.js"></script>
+
+<script type="text/javascript">window.MODEL_ID = "YansvRSAQRxMUABhkrmklrqKjhGRCjAQ"; window.SPINNER_CLASS = 'spinner'; window.NUM_FILES = 1;</script>
+
+<script type="text/javascript" src="./bimsurfer/bimsurfer/lib/require.js" data-main="./App.js"></script>
+
+
+
+<div id='bimsurfer'>
+
+  <div id="app"></div>
+<!-- built files will be auto injected -->
+
+  <div id='left'>
+    <div id='top' class='bimsurfer-static-tree'></div>
+    <div id='middle' class='bimsurfer-metadata'></div>
+    <div id='bottom'></div>
+  </div>
+  <div id='right'>
+  </div>
+  <div id='footer'>
+  Powered by <a href='http://ifcopenshell.org/'>IfcOpenShell</a> and <a href='https://github.com/AECgeeks/bimsurfer2'>BIMSurfer2</a>
+  </div>
+
+</div>
+
+
+</body>
+
+
+</html>
