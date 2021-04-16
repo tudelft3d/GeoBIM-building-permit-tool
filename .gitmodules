@@ -1,6 +1,6 @@
 [submodule "application/bimsurfer"]
-	path = application/geobim_viewer/bimsurfer
-	url = https://github.com/AECgeeks/BIMsurfer2
+	path = application/geobim_viewer/public/bimsurfer
+	url = https://github.com/jliempt/BIMsurfer2
 [submodule "application/GEOBIM_Tool"]
 	path = application/GEOBIM_Tool
 	url = https://github.com/jliempt/GEOBIM_Tool.git
