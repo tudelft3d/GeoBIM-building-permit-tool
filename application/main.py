@@ -41,6 +41,7 @@ import utils
 import worker
 import database
 import GEOBIM_Tool as geobim
+# from geobim_analysis import analyser
 
 application = Flask(__name__)
 dropzone = Dropzone(application)
@@ -84,8 +85,9 @@ if not DEVELOPMENT:
     q = Queue(connection=Redis(host=os.environ.get("REDIS_HOST", "localhost")), default_timeout=3600)
 
 # geobim.init()
-app = geobim.application()
+# app = geobim.application()
 # app.start()
+analysers = {}
 
 @application.route('/', methods=['GET'])
 def get_main():
@@ -132,7 +134,9 @@ def process_upload_multiple(files, callback_url=None):
         filewriter(path)
         file_id += 1
         m.files.append(database.file(id, ''))
-        app.load(path)
+        analyser = geobim.analyser()
+        analyser.load(path)
+        analysers[fn] = analyser
 
     session.commit()
     session.close()
@@ -302,7 +306,8 @@ def floor_wkt(floornumber):
 
 @application.route('/analysis/overhangsingle/<floornumber>', methods=['GET'])
 def overhangsingle(floornumber):
-    result = app.OverhangOneFloor(floornumber)
+    name = list(analysers.keys())[0]
+    result = analysers[name].OverhangOneFloor(floornumber)
     return jsonify(result)
 
 """
