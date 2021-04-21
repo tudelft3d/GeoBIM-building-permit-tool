@@ -34,17 +34,6 @@ services:
     volumes:
       - ./models:/data
       
-  vue-ui:
-    build:
-      context: ./application/geobim_viewer
-      dockerfile: Dockerfile-dev
-    ports:
-      - "82:82"
-    container_name: vue-ui
-    volumes:
-       - ./my-app:/usr/src/app/my-app
-       - /usr/src/app/my-app/node_modules
-      
   nginx:
     image: nginx:1.17-alpine
     depends_on:
