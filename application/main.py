@@ -136,7 +136,7 @@ def process_upload_multiple(files, callback_url=None):
         m.files.append(database.file(id, ''))
         analyser = geobim.analyser()
         analyser.load(path)
-        analysers[fn] = analyser
+        analysers[id] = analyser
 
     session.commit()
     session.close()
@@ -149,6 +149,27 @@ def process_upload_multiple(files, callback_url=None):
 
     return id
 
+@application.route('/preloaded_models_info', methods=['GET'])
+def preloaded_models_info():
+    
+    path = '../models-preloaded'
+    fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn))]
+    
+    return jsonify(fns)
+
+@application.route('/load_preloaded_file/<fn>', methods=['GET'])
+def load_preloaded_file(fn):
+    path = "../models-preloaded/" + fn
+    ids_f = open("../models-preloaded/ids.json")
+    ids = json.load(ids_f)
+    id = ids[fn]
+    
+    if id not in analysers.keys():
+        analyser = geobim.analyser()
+        analyser.load(path)
+        analysers[id] = analyser
+        
+    return id
 
 @application.route('/upload_ifc', methods=['POST'])
 def put_main():
@@ -299,16 +320,71 @@ def get_model(fn):
         return send_file(path)
 
 
-@application.route('/analysis/wkt/<floornumber>', methods=['GET'])
-def floor_wkt(floornumber):
-    result = app.footprintWKT(floornumber)
+@application.route('/analysis/<id>/wkt/<floornumber>', methods=['GET'])
+def floor_wkt(id, floornumber):
+    result = analysers[id].footprintWKT(floornumber)
     return jsonify({"wkt": result})
 
-@application.route('/analysis/overhangsingle/<floornumber>', methods=['GET'])
-def overhangsingle(floornumber):
-    name = list(analysers.keys())[0]
-    result = analysers[name].OverhangOneFloor(floornumber)
+@application.route('/analysis/<id>/overhangsingle/<floornumber>', methods=['GET'])
+def overhangsingle(id, floornumber):
+    result = analysers[id].OverhangOneFloor(floornumber)
     return jsonify(result)
+
+@application.route('/analysis/<id>/overhangall', methods=['GET'])
+def overhangall(id):
+    result = analysers[id].OverhangAll_new()
+    return result
+
+@application.route('/analysis/<id>/height', methods=['GET'])
+def height(id):
+    result = analysers[id].GetHeight()
+    return result
+
+@application.route('/analysis/<id>/baseheight/<floornumber>', methods=['GET'])
+def baseheight(id, floornumber):
+    result = analysers[id].GetBaseHeight(floornumber)
+    return result
+
+@application.route('/analysis/<id>/overlapsingle/<floornumber>', methods=['GET'])
+def overlapsingle(id, floornumber):
+    result = analysers[id].OverlapOneFloor(floornumber)
+    return result
+
+@application.route('/analysis/<id>/overlapall', methods=['GET'])
+def overlapall(id):
+    result = analysers[id].OverlapAll()
+    return result
+
+@application.route('/analysis/<id>/overlapsinglebbox/<floornumber>', methods=['GET'])
+def overlapsinglebbox(id, floornumber):
+    result = analysers[id].OverlapOneFloorOBB(floornumber)
+    return result
+
+@application.route('/analysis/<id>/overlapallbbox', methods=['GET'])
+def overlapallbbox(id):
+    result = analysers[id].OverlapAllOBB()
+    return result
+    
+@application.route('/analysis/<id>/setbasefloornum/<floornumber>', methods=['GET'])
+def setbasefloornum(id, floornumber):
+    analysers[id].setBaseFloornum()
+    return True
+
+@application.route('/analysis/<id>/addgeoreferencepoint/<x>/<y>/<z>', methods=['GET'])
+def addgeoreferencepoint(id, x, y, z):
+    analysers[id].setBaseFloornum()
+    return True
+
+@application.route('/analysis/<id>/setoverhangdir/<direction>', methods=['GET'])
+def setoverhangdir(id, direction):
+    analysers[id].setOverhangdir(direction)
+    return True
+
+@application.route('/analysis/<id>/setoverlapparameters', methods=['GET'])
+def setoverlapparameters(id, x, y, z):
+    analysers[id].setOverlapParameters(x, y, z)
+    return True
+
 
 """
 # Create a file called routes.py with the following
