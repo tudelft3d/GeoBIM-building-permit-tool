@@ -23,7 +23,7 @@
 
               </a>
 
-              <a class="navbar-item" @click="hoi()">
+              <a class="navbar-item" @click="pickFile()">
                 Pick
               </a>
               
@@ -91,19 +91,19 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="overlapSingleSettings()">
                 Single floor overlap
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="overlapSingleBboxSettings()">
                 Single floor overlap bounding box
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="overlapAllSettings()">
                 All floors overlap
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="overlapAllBboxSettings()">
                 All floors overlap bounding box
                 </a>
               
@@ -123,7 +123,7 @@
                 Single floor overhang
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="overhangAllSettings()">
                 All floors overhang
                 </a>
               
@@ -139,11 +139,11 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="heightSettings()">
                 Height
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="baseHeightSettings()">
                 Get base height
                 </a>
               
@@ -198,7 +198,7 @@
           <button
             class="delete"
             aria-label="close"
-            @click="showModal = false"
+            @click="showModal = false; resetModalParams()"
           />
         </header>
         <section class="modal-card-body">
@@ -224,6 +224,49 @@
         </section>
       </div>
     </b-modal>
+
+    <b-modal
+      v-model="showFilePicker"
+      has-modal-card
+    >
+      <div class="modal-card" modal-background-background-color>
+        <header class="modal-card-head">
+          <p class="modal-card-title">
+            Available IFC files
+          </p>
+          <button
+            class="delete"
+            aria-label="close"
+            @click="showFilePicker = false"
+          />
+        </header>
+        <section class="modal-card-body">
+          <div class="content">
+
+            <div class="control">
+
+              <div v-for="fn in availableFiles" :key="fn">
+                <label class="radio">
+                <input type="radio" name="pickedId">
+                {{ fn }}
+                </label>
+                <br>
+              </div>
+
+            </div>
+
+            <br>
+
+            <div class="buttons">
+              <b-button type="is-light" @click="loadPreloadedFile">Load</b-button>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </b-modal>
+
+
     </nav>
 
 
@@ -241,6 +284,7 @@ export default {
 
     baseURL: {
       type: String,
+      // default: "http://127.0.0.1:5000/"
       default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse"
     },
 
@@ -258,6 +302,17 @@ export default {
 
         }
 
+    },
+
+    availableFiles: {
+
+      type: Array,
+      default() {
+
+        return [];
+
+      }
+
     }
 
   },
@@ -266,13 +321,21 @@ export default {
 
     return {
 
-      showModal: false
+      showModal: false,
+      showFilePicker: false,
+      loadedId: ""
 
     };
 
   },
 
   methods: {
+
+    resetModalParams() {
+
+      this.modalParams = { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {} };
+
+    },
 
     poll( url ) {
 
@@ -286,6 +349,8 @@ export default {
 
           const split = url.split( "/" );
           const id = split[ split.length - 1 ];
+
+          this.loadedId = id;
           
           this.loadModel( id );
 
@@ -343,7 +408,7 @@ export default {
 
   },
 
-    loadModel( id ) {
+  loadModel( id ) {
 
     var v = new ifcViewer({
       domNode: 'right',
@@ -365,6 +430,49 @@ export default {
 
   },
 
+  pickFile() {
+
+    fetch( this.baseURL + "/preloaded_models_info" )
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+
+        this.availableFiles = res;
+
+    }.bind( this ));
+
+    this.showFilePicker = true;
+
+  },
+
+  loadPreloadedFile() {
+
+    var fn;
+
+    var radios = document.getElementsByName('pickedId');
+    for (var i = 0, length = radios.length; i < length; i++) {
+
+      if (radios[i].checked) {
+
+        fn = radios[i].labels[0].innerText;
+        fn = fn.trim();
+
+        break;
+      }
+    }
+
+    this.showFilePicker = false;
+
+    fetch( this.baseURL + "/load_preloaded_file/" + fn )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        this.loadedId = res;
+        this.loadModel( this.loadedId );
+
+    }.bind( this ));
+
+  },
+
     wktFootprintSettings() {
 
       this.modalParams.title = "Floor footprint WKT";
@@ -378,7 +486,7 @@ export default {
 
     wktFootprint() {
 
-      fetch( this.baseURL + "/analysis/" + "/wkt/" + this.modalParams.input[ "floorNumber" ] )
+      fetch( this.baseURL + "/analysis/" + this.loadedId + "/wkt/" + this.modalParams.input[ "floorNumber" ] )
         .then(function(r) { return r.json(); })
         .then(function(res) {
 
@@ -408,7 +516,7 @@ export default {
 
   overhangSingle() {
 
-    fetch( this.baseURL + "/analysis/" + "/overhangsingle/" + this.modalParams.input[ "floorNumber" ] )
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangsingle/" + this.modalParams.input[ "floorNumber" ] )
       .then(function(r) { return r.json(); })
       .then(function(res) {
 
@@ -418,6 +526,212 @@ export default {
     }.bind( this ));
 
   },
+
+  overhangAllSettings() {
+
+    this.modalParams.title = "All floors overhang";
+    this.modalParams.function = "overhangAll";
+    this.modalParams.info = "";
+    this.showModal = true;
+
+  },
+
+  overhangAll() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangall" )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  heightSettings() {
+
+    this.modalParams.title = "Get height";
+    this.modalParams.function = "height";
+    this.modalParams.info = "";
+    this.showModal = true;
+
+  },
+
+  height() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/height" )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  baseHeightSettings() {
+
+    this.modalParams.title = "Get base height";
+    this.modalParams.fields = {"Floor number": "floorNumber"}
+    this.modalParams.function = "baseHeight";
+    this.modalParams.info = "";
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.showModal = true;
+
+  },
+
+  baseHeight() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/baseheight/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  overlapSingleSettings() {
+
+    this.modalParams.title = "One floor overlap";
+    this.modalParams.fields = {"Floor number": "floorNumber"}
+    this.modalParams.function = "overlapSingle";
+    this.modalParams.info = "";
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.showModal = true;
+
+  },
+
+  overlapSingle() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsingle/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  overlapSingleBboxSettings() {
+
+    this.modalParams.title = "One floor overlap bounding box";
+    this.modalParams.fields = {"Floor number": "floorNumber"}
+    this.modalParams.function = "overlapSingleBbox";
+    this.modalParams.info = "";
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.showModal = true;
+
+  },
+
+  overlapSingleBbox() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsinglebbox/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  overlapAllSettings() {
+
+    this.modalParams.title = "All floors overlap";
+    this.modalParams.function = "overlapAll";
+    this.modalParams.info = "";
+    this.showModal = true;
+
+  },
+
+  overlapAll() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapall" )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  overlapAllBboxSettings() {
+
+    this.modalParams.title = "All floors overlap bounding box";
+    this.modalParams.function = "overlapAllBbox";
+    this.modalParams.info = "";
+    this.showModal = true;
+
+  },
+
+  overlapAllBbox() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapallbbox" )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = res;
+
+    }.bind( this ));
+
+  },
+
+  setBaseFloorNumSettings() {
+
+    this.modalParams.title = "Set base floor number";
+    this.modalParams.fields = {"Floor number": "floorNumber"}
+    this.modalParams.function = "setBaseFloorNum";
+    this.modalParams.info = "";
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.showModal = true;
+
+  },
+
+  setBaseFloorNum() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/setbasefloornum/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+
+    }.bind( this ));
+
+  },
+
+  // addGeoreferencePointSettings() {
+
+  //   this.modalParams.title = "Set base floor number";
+  //   this.modalParams.fields = {"Floor number": "floorNumber"}
+  //   this.modalParams.function = "addGeoreferencePoint";
+  //   this.modalParams.info = "";
+  //   this.modalParams.input[ "floorNumber" ] = "";
+  //   this.showModal = true;
+
+  // },
+
+  // addGeoreferencePoint() {
+
+  //   fetch( this.baseURL + "/analysis/" + this.loadedId + "/setbasefloornum/" + this.modalParams.input[ "floorNumber" ] )
+  //     .then(function(r) { return r.text(); })
+  //     .then(function(res) {
+
+  //       console.log( res );
+
+  //   }.bind( this ));
+
+  // },
 
   downloadFile() {
 
