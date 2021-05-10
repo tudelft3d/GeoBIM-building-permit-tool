@@ -57,6 +57,7 @@ WORKDIR /www
 COPY application/*.py /www/
 COPY application/templates /www/templates
 COPY application/GEOBIM_Tool /www/GEOBIM_Tool
+COPY models-preloaded /www/models-preloaded
 
 # WORKDIR /
 # RUN python3 -m pip install -r /www/GEOBIM_Tool/requirements.txt # GEOBIM_Tool
