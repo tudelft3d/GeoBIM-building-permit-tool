@@ -284,8 +284,8 @@ export default {
 
     baseURL: {
       type: String,
-      // default: "http://127.0.0.1:5000/"
-      default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
+      default: "http://127.0.0.1:5000/"
+      // default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
     },
 
     filename: {
@@ -326,6 +326,20 @@ export default {
       loadedId: ""
 
     };
+
+  },
+
+  watch: {
+
+    showModal: function (val) {
+
+      if ( val == false ) {
+
+        this.resetModalParams();
+
+      }
+
+    }
 
   },
 
