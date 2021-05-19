@@ -6,7 +6,7 @@
       class="navbar is-light is-size-7"
       role="navigation"
       aria-label="flask navigation"
-      id="navbartje"
+      id="navbar"
     >
       
           <div
@@ -266,9 +266,7 @@
       </div>
     </b-modal>
 
-
     </nav>
-
 
   </div>
 </template>
@@ -304,6 +302,17 @@ export default {
 
     },
 
+    cameraParams: {
+
+      type: Object,
+      default() {
+
+        return { "pan": 5, "rotate": 8, "zoom": 5 }
+
+      }
+
+    },
+
     availableFiles: {
 
       type: Array,
@@ -323,7 +332,8 @@ export default {
 
       showModal: false,
       showFilePicker: false,
-      loadedId: ""
+      loadedId: "",
+      v: undefined
 
     };
 
@@ -441,6 +451,8 @@ export default {
     v.loadMetadata('middle');
     v.loadTreeView('top');
 
+    this.v = v;
+    this.v.bimSurfer3D.setCameraControls(this.cameraParams);
 
   },
 
@@ -782,7 +794,7 @@ export default {
       overflow: hidden;
     }
 
-    #analysis, #navbartje {
+    #analysis, #navbar {
 
       min-height: unset;
       height: 30px;
@@ -805,6 +817,7 @@ export default {
     #right {
         left: 25%;
         right: 0;
+        overflow: hidden;
     }
     #left > div {
         height: 33%;
