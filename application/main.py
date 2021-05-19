@@ -32,6 +32,7 @@ from collections import defaultdict, namedtuple
 from flask_dropzone import Dropzone
 
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.datastructures import FileStorage
 from flask import Flask, request, send_file, render_template, abort, jsonify, redirect, url_for, make_response
 from flask_cors import CORS
 from flask_basicauth import BasicAuth
@@ -110,7 +111,6 @@ def process_upload(filewriter, callback_url=None):
         t = threading.Thread(target=lambda: worker.process(id, callback_url))
         t.start()
 
-
     else:
         q.enqueue(worker.process, id, callback_url)
 
@@ -123,6 +123,7 @@ def process_upload_multiple(files, callback_url=None):
     os.makedirs(d)
 
     file_id = 0
+    paths = []
     session = database.Session()
     m = database.model(id, '')
     session.add(m)
@@ -132,6 +133,7 @@ def process_upload_multiple(files, callback_url=None):
         filewriter = lambda fn: file.save(fn)
         path = os.path.join(d, id + "_" + str(file_id) + ".ifc")
         filewriter(path)
+        paths.append(path)
         file_id += 1
         m.files.append(database.file(id, ''))
         analyser = geobim.analyser()
@@ -146,6 +148,18 @@ def process_upload_multiple(files, callback_url=None):
         t.start()
     else:
         q.enqueue(worker.process, id, callback_url)
+        
+    settings_path = "../models-preloaded/ids.json"
+    with open(settings_path, "r") as settings_file:
+        settings = json.load(settings_file)
+        settings[file.filename] = {}
+        settings[file.filename]["id"] = id
+        settings[file.filename]["path"] = paths[0]
+                
+    os.remove(settings_path)
+    with open(settings_path, 'w') as f:
+        json.dump(settings, f)
+        
 
     return id
 
@@ -153,7 +167,7 @@ def process_upload_multiple(files, callback_url=None):
 def preloaded_models_info():
     
     path = '../models-preloaded'
-    fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn))]
+    fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn)) and fn[-4:] == ".ifc"]
     
     return jsonify(fns)
 
@@ -162,7 +176,7 @@ def load_preloaded_file(fn):
     path = "../models-preloaded/" + fn
     ids_f = open("../models-preloaded/ids.json")
     ids = json.load(ids_f)
-    id = ids[fn]
+    id = ids[fn]["id"]
     
     if id not in analysers.keys():
         analyser = geobim.analyser()
@@ -170,6 +184,42 @@ def load_preloaded_file(fn):
         analysers[id] = analyser
         
     return id
+
+@application.route('/init_preloaded_files', methods=['GET'])
+def init_preloaded_files():
+    path = '../models-preloaded/'
+    fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn))]
+    
+    settings_path = path + "ids.json"
+    with open(settings_path, "r") as settings_file:
+        settings = json.load(settings_file)
+    
+        for fn in fns:
+            if fn[-4:] == ".ifc" and fn not in settings.keys():
+                f = open(path + fn, 'rb')
+                file = FileStorage(f)
+                
+                id = process_upload_multiple([file])
+                f.close()
+                settings[fn] = {}
+                settings[fn]["id"] = id
+                settings[fn]["path"] = path + fn
+                
+    os.remove(settings_path)
+    with open(settings_path, 'w') as f:
+        json.dump(settings, f)
+        
+    return "success"
+
+def init_analyser(id):
+    settings_path = '../models-preloaded/ids.json'
+    with open(settings_path, "r") as settings_file:
+        settings = json.load(settings_file)
+        for model in settings:
+            if settings[model]["id"] == id:
+                analyser = geobim.analyser()
+                analyser.load(settings[model]["path"])
+                analysers[id] = analyser
 
 @application.route('/upload_ifc', methods=['POST'])
 def put_main():
@@ -322,68 +372,94 @@ def get_model(fn):
 
 @application.route('/analysis/<id>/wkt/<floornumber>', methods=['GET'])
 def floor_wkt(id, floornumber):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].footprintWKT(floornumber)
     return jsonify({"wkt": result})
 
 @application.route('/analysis/<id>/overhangsingle/<floornumber>', methods=['GET'])
 def overhangsingle(id, floornumber):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].OverhangOneFloor(floornumber)
     return jsonify(result)
 
 @application.route('/analysis/<id>/overhangall', methods=['GET'])
 def overhangall(id):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].OverhangAll_new()
     return result
 
 @application.route('/analysis/<id>/height', methods=['GET'])
 def height(id):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].GetHeight()
     return result
 
 @application.route('/analysis/<id>/baseheight/<floornumber>', methods=['GET'])
 def baseheight(id, floornumber):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].GetBaseHeight(floornumber)
     return result
 
 @application.route('/analysis/<id>/overlapsingle/<floornumber>', methods=['GET'])
 def overlapsingle(id, floornumber):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].OverlapOneFloor(floornumber)
     return result
 
 @application.route('/analysis/<id>/overlapall', methods=['GET'])
 def overlapall(id):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].OverlapAll()
     return result
 
 @application.route('/analysis/<id>/overlapsinglebbox/<floornumber>', methods=['GET'])
 def overlapsinglebbox(id, floornumber):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].OverlapOneFloorOBB(floornumber)
     return result
 
 @application.route('/analysis/<id>/overlapallbbox', methods=['GET'])
 def overlapallbbox(id):
+    if id not in analysers:
+        init_analyser(id)
     result = analysers[id].OverlapAllOBB()
     return result
     
 @application.route('/analysis/<id>/setbasefloornum/<floornumber>', methods=['GET'])
 def setbasefloornum(id, floornumber):
+    if id not in analysers:
+        init_analyser(id)
     analysers[id].setBaseFloornum()
-    return True
+    return "success"
 
 @application.route('/analysis/<id>/addgeoreferencepoint/<x>/<y>/<z>', methods=['GET'])
 def addgeoreferencepoint(id, x, y, z):
+    if id not in analysers:
+        init_analyser(id)
     analysers[id].setBaseFloornum()
-    return True
+    return "success"
 
 @application.route('/analysis/<id>/setoverhangdir/<direction>', methods=['GET'])
 def setoverhangdir(id, direction):
+    if id not in analysers:
+        init_analyser(id)
     analysers[id].setOverhangdir(direction)
-    return True
+    return "success"
 
 @application.route('/analysis/<id>/setoverlapparameters', methods=['GET'])
 def setoverlapparameters(id, x, y, z):
+    if id not in analysers:
+        init_analyser(id)
     analysers[id].setOverlapParameters(x, y, z)
-    return True
+    return "success"
 
 
 """
