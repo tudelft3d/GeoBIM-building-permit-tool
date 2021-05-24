@@ -18,14 +18,21 @@
             <div class="navbar-dropdown">
               <a class="navbar-item">
 
-                <input class="file-input" type="file" ref="ifcFiles" @change="selectedFile">
+                <input class="file-input" type="file" ref="ifcFiles" @change="selectedIfcFile">
                 Upload IFC
-
               </a>
 
               <a class="navbar-item" @click="pickFile()">
-                Pick
+                Pick IFC
               </a>
+
+              <a class="navbar-item">
+
+                <input class="file-input" type="file" ref="requirementsFile" @change="selectedPermitFile">
+                Upload permit requirements
+
+              </a>
+
               
             </div>
 
@@ -394,7 +401,7 @@ export default {
 
     },
 
-  async selectedFile() {
+  async selectedIfcFile() {
 
     const files = this.$refs.ifcFiles; 
     const file = files.files[0];
@@ -429,6 +436,22 @@ export default {
     
     .bind( this ))
     .catch(console.error);
+
+  },
+
+  async selectedPermitFile() {
+
+    const files = this.$refs.requirementsFile; 
+    const file = files.files[0];
+
+    if ( !file || file.name.slice(-5) != ".json" ) {
+
+      alert( "Please choose a JSON file!" );
+      return;
+
+    }
+
+    console.log(JSON.parse(await file.text()));
 
   },
 
