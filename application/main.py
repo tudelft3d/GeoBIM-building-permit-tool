@@ -62,6 +62,9 @@ else:
 if not DEVELOPMENT:
     # In some setups this proved to be necessary for url_for() to pick up HTTPS
     application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1)
+    
+MODELS_PATH = "../models-preloaded/"
+IDS_PATH = MODELS_PATH + "ids.json"
 
 CORS(application)
 application.config['SWAGGER'] = {
@@ -149,7 +152,7 @@ def process_upload_multiple(files, callback_url=None):
     else:
         q.enqueue(worker.process, id, callback_url)
         
-    settings_path = "../models-preloaded/ids.json"
+    settings_path = IDS_PATH
     with open(settings_path, "r") as settings_file:
         settings = json.load(settings_file)
         settings[file.filename] = {}
@@ -160,21 +163,20 @@ def process_upload_multiple(files, callback_url=None):
     with open(settings_path, 'w') as f:
         json.dump(settings, f)
         
-
     return id
 
 @application.route('/preloaded_models_info', methods=['GET'])
 def preloaded_models_info():
     
-    path = '../models-preloaded'
+    path = MODELS_PATH
     fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn)) and fn[-4:] == ".ifc"]
     
     return jsonify(fns)
 
 @application.route('/load_preloaded_file/<fn>', methods=['GET'])
 def load_preloaded_file(fn):
-    path = "../models-preloaded/" + fn
-    ids_f = open("../models-preloaded/ids.json")
+    path = MODELS_PATH + fn
+    ids_f = open(IDS_PATH)
     ids = json.load(ids_f)
     id = ids[fn]["id"]
     
@@ -197,7 +199,7 @@ def init_preloaded_files():
     return jsonify("success")
 
 def preload_files():
-    path = '../models-preloaded/'
+    path = MODELS_PATH
     fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn))]
     
     settings_path = path + "ids.json"
@@ -221,7 +223,7 @@ def preload_files():
     
 
 def init_analyser(id):
-    settings_path = '../models-preloaded/ids.json'
+    settings_path = IDS_PATH
     with open(settings_path, "r") as settings_file:
         settings = json.load(settings_file)
         for model in settings:
@@ -229,6 +231,26 @@ def init_analyser(id):
                 analyser = geobim.analyser()
                 analyser.load(settings[model]["path"])
                 analysers[id] = analyser
+                
+def init_analysers():
+    settings_path = IDS_PATH
+    with open(settings_path, "r") as settings_file:
+        settings = json.load(settings_file)
+        for model in settings:
+            if id not in analysers:
+                analyser = geobim.analyser()
+                analyser.load(settings[model]["path"])
+                analysers[id] = analyser
+                
+@application.route('/init_all_analysers', methods=['GET'])
+def init_all_analysers():
+    if DEVELOPMENT:
+        t = threading.Thread(target=init_analysers)
+        t.start()
+    else:
+        q.enqueue(preload_files)
+        
+    return jsonify("success")
 
 @application.route('/upload_ifc', methods=['POST'])
 def put_main():
@@ -449,7 +471,7 @@ def setbasefloornum(id, floornumber):
     analysers[id].setBaseFloornum()
     return "success"
 
-@application.route('/analysis/<id>/addgeoreferencepoint/<x>/<y>/<z>', methods=['GET'])
+@application.route('/analysis/<id>/addgeoreferencepoint/<xyz>', methods=['GET'])
 def addgeoreferencepoint(id, x, y, z):
     if id not in analysers:
         init_analyser(id)

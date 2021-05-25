@@ -473,6 +473,8 @@ export default {
 
       const url = res.data[ 'url' ];
 
+      console.log(url);
+
       this.poll( this.baseURL + url );
 
     }
@@ -702,11 +704,11 @@ export default {
   async overhangSingle() {
 
     return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangsingle/" + this.modalParams.input[ "floorNumber" ] )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
@@ -724,11 +726,11 @@ export default {
   async overhangAll() {
 
     return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangall" )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
@@ -770,11 +772,11 @@ export default {
   baseHeight() {
 
     fetch( this.baseURL + "/analysis/" + this.loadedId + "/baseheight/" + this.modalParams.input[ "floorNumber" ] )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
@@ -794,11 +796,11 @@ export default {
   async overlapSingle() {
 
     return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsingle/" + this.modalParams.input[ "floorNumber" ] )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
@@ -818,11 +820,11 @@ export default {
   overlapSingleBbox() {
 
     fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsinglebbox/" + this.modalParams.input[ "floorNumber" ] )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
@@ -840,11 +842,11 @@ export default {
   async overlapAll() {
 
     return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapall" )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
@@ -862,11 +864,11 @@ export default {
   overlapAllBbox() {
 
     fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapallbbox" )
-      .then(function(r) { return r.text(); })
+      .then(function(r) { return r.json(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = res;
+        this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 
