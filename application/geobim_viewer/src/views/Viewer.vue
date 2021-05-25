@@ -348,7 +348,7 @@ export default {
       type: Object,
       default() {
 
-        return { "pan": 5, "rotate": 8, "zoom": 5 }
+        return { "pan": 100, "rotate": 8, "zoom": 5 }
 
       }
 
@@ -738,6 +738,7 @@ export default {
 
   heightSettings() {
 
+    console.log(this.v);
     this.modalParams.title = "Get height";
     this.modalParams.function = "height";
     this.modalParams.info = "";
