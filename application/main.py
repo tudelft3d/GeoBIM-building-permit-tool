@@ -187,6 +187,16 @@ def load_preloaded_file(fn):
 
 @application.route('/init_preloaded_files', methods=['GET'])
 def init_preloaded_files():
+    
+    if DEVELOPMENT:
+        t = threading.Thread(target=preload_files)
+        t.start()
+    else:
+        q.enqueue(preload_files)
+        
+    return jsonify("success")
+
+def preload_files():
     path = '../models-preloaded/'
     fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn))]
     
@@ -208,8 +218,7 @@ def init_preloaded_files():
     os.remove(settings_path)
     with open(settings_path, 'w') as f:
         json.dump(settings, f)
-        
-    return "success"
+    
 
 def init_analyser(id):
     settings_path = '../models-preloaded/ids.json'
@@ -389,7 +398,7 @@ def overhangall(id):
     if id not in analysers:
         init_analyser(id)
     result = analysers[id].OverhangAll_new()
-    return result
+    return jsonify(result)
 
 @application.route('/analysis/<id>/height', methods=['GET'])
 def height(id):

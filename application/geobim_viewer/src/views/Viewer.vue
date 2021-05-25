@@ -38,7 +38,7 @@
 
           </div>
 
-          <div
+          <!-- <div
             class="navbar-item has-dropdown is-hoverable"
           >
             <a class="navbar-link">
@@ -46,7 +46,7 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="clearViewer()">
                 Clear viewer
                 </a>
 
@@ -60,7 +60,7 @@
               
             </div>
 
-          </div>
+          </div> -->
 
           <div
             class="navbar-item has-dropdown is-hoverable"
@@ -70,11 +70,11 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="setBaseFloorNumSettings()">
                 Set base floor number
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="addGeoreferencePointSettings()">
                 Add georeference point
                 </a>
 
@@ -182,7 +182,7 @@
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="parkingUnitsSettings()">
                 Parking units calculation
                 </a>
               
@@ -218,13 +218,36 @@
               <b-input v-model="modalParams.input[ input ]"></b-input>
             </b-field>
 
+            <!-- <b-field v-for="f in modalParams.files" v-bind:key="f" label="Upload file">
+              <div class="file has-name is-fullwidth">
+                <input class="file-input" type="file" ref="modalParams.files">
+              </div>
+            </b-field> -->
+            <b-field v-if="modalParams.file" label="Upload file">
+
+              <div class="file has-name">
+                <label class="file-label">
+                  <input class="file-input" type="file" ref="modalFile" @change="selectedModalFile">
+                  <span class="file-cta">
+                    <span class="file-icon">
+                      <i class="fas fa-upload"></i>
+                    </span>
+                    <span class="file-label">
+                      Choose a file…
+                    </span>
+                  </span>
+                </label>
+              </div>
+              
+            </b-field>
+
             <b-field label="Result">
               <textarea class="textarea" :value="modalParams.result"></textarea>
             </b-field>
 
             <div class="buttons">
               <b-button type="is-light" @click="analysisCall(modalParams.function)">OK</b-button>
-              <b-button type="is-light" v-if="modalParams.result.length != 0" @click="downloadFile">Save result</b-button>
+              <b-button type="is-light" v-if="modalParams.result.length != 0" @click="downloadFile(modalParams.result, 'text')">Save result</b-button>
             </div>
 
           </div>
@@ -295,7 +318,7 @@ export default {
 
     filename: {
       type: String,
-      default: "result.txt"
+      default: "result"
     },
 
     modalParams: {
@@ -303,9 +326,20 @@ export default {
       type: Object,
       default() {
 
-         return { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {} }
+         return { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false }
 
         }
+
+    },
+
+    permitParams: {
+
+      type: Object,
+      default() {
+
+        return {}
+
+      }
 
     },
 
@@ -362,9 +396,18 @@ export default {
 
   methods: {
 
+    clearViewer() {
+
+      this.resetModalParams();
+      this.loadedId = "",
+      this.v = undefined;
+      this.permitParams = {};
+
+    },
+
     resetModalParams() {
 
-      this.modalParams = { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {} };
+      this.modalParams = { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false };
 
     },
 
@@ -439,6 +482,22 @@ export default {
 
   },
 
+  async selectedModalFile() {
+
+    const files = this.$refs.modalFile; 
+    const file = files.files[0];
+
+    if ( !file || file.name.slice(-5) != ".xlsx" ) {
+
+      alert( "Please choose an XLSX file!" );
+      return;
+
+    }
+
+    this.modalParams.file = file;
+
+  },
+
   async selectedPermitFile() {
 
     const files = this.$refs.requirementsFile; 
@@ -451,8 +510,85 @@ export default {
 
     }
 
-    console.log(JSON.parse(await file.text()));
+    this.permitParams = JSON.parse(await file.text());
+    this.permitAnalysis();
 
+  },
+
+  async permitAnalysis() {
+
+    const params = this.permitParams;
+
+    if ( params.height != undefined ) {
+
+      const maxHeight = params.height.maxMetres;
+      await this.height();
+      this.permitParams.height["result"] = {};
+      this.permitParams.height["result"]["height"] = parseFloat(this.modalParams.result);
+      this.permitParams.height["result"]["complies"] = parseFloat(this.modalParams.result) < parseFloat(maxHeight);
+
+    }
+
+    if ( params.overlap != undefined ) {
+
+      for ( var k in params.overlap ) {
+
+        const maxPercentage = params.overlap[k].maxPercentage;
+        const floor = params.overlap[k].floor;
+
+        if ( floor != undefined ) {
+
+          this.modalParams.input[ "floorNumber" ] = floor;
+          await this.overlapSingle();
+          var result = JSON.parse(this.modalParams.result);
+          this.permitParams.overlap[k].result = result;
+          this.permitParams.overlap[k].result["complies"] = parseFloat(this.modalParams.result["overlap_percentage"]) < parseFloat(maxPercentage);
+
+        } else {
+
+          await this.overlapAll();
+          var result = JSON.parse(this.modalParams.result);
+          this.permitParams.overlap[k].result = result;
+          this.permitParams.overlap[k].result["complies"] = parseFloat(result["overlap_percentage"]) < parseFloat(maxPercentage);
+
+        }
+
+      }
+
+    }
+
+    if ( params.overhang != undefined ) {
+
+      for ( var k in params.overhang ) {
+
+        const maxMetres = params.overhang[k].maxMetres;
+        const floor = params.overhang[k].floor;
+
+        if ( floor != undefined ) {
+
+          this.modalParams.input[ "floorNumber" ] = floor;
+          await this.overhangSingle();
+          var result = JSON.parse(this.modalParams.result);
+          this.permitParams.overhang[k].result = result;
+          this.permitParams.overhang[k].result["complies"] = ( parseFloat(result.up_overhang) < parseFloat(maxMetres) ) && ( parseFloat(result.low_overhang) < parseFloat(maxMetres) );
+
+        } else {
+
+          await this.overhangAll();
+          var result = JSON.parse(this.modalParams.result);
+          this.permitParams.overhang[k].result = result;
+          this.permitParams.overhang[k].result["complies"] = ( parseFloat(result.north.distance) < parseFloat(maxMetres) ) && ( parseFloat(result.south.distance) < parseFloat(maxMetres) );
+
+
+        }
+        
+      }
+
+    }
+
+    console.log(this.permitParams);
+    this.downloadFile(this.permitParams, 'json');
+    
   },
 
   loadModel( id ) {
@@ -563,14 +699,14 @@ export default {
 
   },
 
-  overhangSingle() {
+  async overhangSingle() {
 
-    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangsingle/" + this.modalParams.input[ "floorNumber" ] )
-      .then(function(r) { return r.json(); })
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangsingle/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.text(); })
       .then(function(res) {
 
         console.log( res );
-        this.modalParams.result = "floorname: " + res.floorname + "\n" + "low_overhang: " + res.low_overhang + "\n" + "up_overhang: " + res.up_overhang;
+        this.modalParams.result = res;
 
     }.bind( this ));
 
@@ -585,9 +721,9 @@ export default {
 
   },
 
-  overhangAll() {
+  async overhangAll() {
 
-    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangall" )
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangall" )
       .then(function(r) { return r.text(); })
       .then(function(res) {
 
@@ -607,9 +743,9 @@ export default {
 
   },
 
-  height() {
+  async height() {
 
-    fetch( this.baseURL + "/analysis/" + this.loadedId + "/height" )
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/height" )
       .then(function(r) { return r.text(); })
       .then(function(res) {
 
@@ -655,9 +791,9 @@ export default {
 
   },
 
-  overlapSingle() {
+  async overlapSingle() {
 
-    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsingle/" + this.modalParams.input[ "floorNumber" ] )
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsingle/" + this.modalParams.input[ "floorNumber" ] )
       .then(function(r) { return r.text(); })
       .then(function(res) {
 
@@ -701,9 +837,9 @@ export default {
 
   },
 
-  overlapAll() {
+  async overlapAll() {
 
-    fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapall" )
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapall" )
       .then(function(r) { return r.text(); })
       .then(function(res) {
 
@@ -759,36 +895,89 @@ export default {
 
   },
 
-  // addGeoreferencePointSettings() {
+  addGeoreferencePointSettings() {
 
-  //   this.modalParams.title = "Set base floor number";
-  //   this.modalParams.fields = {"Floor number": "floorNumber"}
-  //   this.modalParams.function = "addGeoreferencePoint";
-  //   this.modalParams.info = "";
-  //   this.modalParams.input[ "floorNumber" ] = "";
-  //   this.showModal = true;
+    this.modalParams.title = "Add georeference point";
+    this.modalParams.fields = {"Point (\"x, y, z\")": "point"}
+    this.modalParams.function = "addGeoreferencePoint";
+    this.modalParams.info = "";
+    this.modalParams.input[ "point" ] = "";
+    this.showModal = true;
 
-  // },
+  },
 
-  // addGeoreferencePoint() {
+  addGeoreferencePoint() {
 
-  //   fetch( this.baseURL + "/analysis/" + this.loadedId + "/setbasefloornum/" + this.modalParams.input[ "floorNumber" ] )
-  //     .then(function(r) { return r.text(); })
-  //     .then(function(res) {
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/addgeoreferencepoint/" + this.modalParams.input[ "point" ] )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
 
-  //       console.log( res );
+        console.log( res );
 
-  //   }.bind( this ));
+    }.bind( this ));
 
-  // },
+  },
 
-  downloadFile() {
+  parkingUnitsSettings() {
 
-    const data = this.modalParams.result;
-    const filename = this.filename;
-    const type = "text/plain";
+    this.modalParams.title = "Parking units calculation";
+    this.modalParams.fields = {"Zone type (A, B, C)": "zoneType"}
+    this.modalParams.function = "parkingUnits";
+    this.modalParams.info = "";
+    this.modalParams.input[ "zoneType" ] = "";
+    this.modalParams.file = true;
+    this.showModal = true;
 
-    const file = new Blob([data], {type: type});
+  },
+
+  parkingUnits(){
+
+      const file = this.modalParams.file;
+      const form = new FormData();
+      form.append("file", file);
+
+      // axios.post( this.baseURL + 'upload_ifc', form, {
+
+      //     headers: {
+
+      //       'Content-Type': 'multipart/form-data'
+
+      //     }
+
+      // })
+
+      // .then( function ( res ) {
+
+      //   const url = res.data[ 'url' ];
+
+      //   this.poll( this.baseURL + url );
+
+      // }
+      
+      // .bind( this ))
+      // .catch(console.error);
+
+  },
+
+  downloadFile(data, type) {
+
+    var filename = this.filename;
+    var mime;
+
+    if ( type == "text" ) {
+
+      mime = "text/plain";
+      filename += ".txt";
+
+    } else if ( type == "json" ) {
+
+      mime = "application/json";
+      filename += ".json";
+      data = JSON.stringify(data);
+
+    }
+
+    const file = new Blob([data], {type: mime});
     if (window.navigator.msSaveOrOpenBlob) // IE10+
         window.navigator.msSaveOrOpenBlob(file, filename);
     else { // Others
