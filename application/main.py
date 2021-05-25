@@ -179,11 +179,6 @@ def load_preloaded_file(fn):
     ids_f = open(IDS_PATH)
     ids = json.load(ids_f)
     id = ids[fn]["id"]
-    
-    if id not in analysers.keys():
-        analyser = geobim.analyser()
-        analyser.load(path)
-        analysers[id] = analyser
         
     return id
 
