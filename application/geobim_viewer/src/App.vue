@@ -17,7 +17,7 @@
       >
         <div class="navbar-start">
           <div class="navbar-item">
-          <span class="logo-text">GeoBIM Tool</span>
+          <span class="logo-text">GEO-BIM Tool</span>
           </div>
           <div class="navbar-item tags has-addons">
             

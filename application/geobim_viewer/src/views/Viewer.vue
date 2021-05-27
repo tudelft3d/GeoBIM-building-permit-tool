@@ -218,11 +218,6 @@
               <b-input v-model="modalParams.input[ input ]"></b-input>
             </b-field>
 
-            <!-- <b-field v-for="f in modalParams.files" v-bind:key="f" label="Upload file">
-              <div class="file has-name is-fullwidth">
-                <input class="file-input" type="file" ref="modalParams.files">
-              </div>
-            </b-field> -->
             <b-field v-if="modalParams.file" label="Upload file">
 
               <div class="file has-name">
