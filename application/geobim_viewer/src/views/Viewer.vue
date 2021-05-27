@@ -82,7 +82,7 @@
                 Set overhang direction
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <a class="navbar-item" @click="setOverlapParamsSettings()">
                 Set overlap parameters
                 </a>
               
@@ -695,7 +695,7 @@ export default {
     this.modalParams.title = "Single floor overhang";
     this.modalParams.fields = {"Floor number": "floorNumber"}
     this.modalParams.function = "overhangSingle";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the overhang in metres of the specified floor over the adjacent streets."
     this.modalParams.input[ "floorNumber" ] = "";
     this.showModal = true;
 
@@ -718,7 +718,7 @@ export default {
 
     this.modalParams.title = "All floors overhang";
     this.modalParams.function = "overhangAll";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the overhang in metres of all floors over the adjacent streets."
     this.showModal = true;
 
   },
@@ -738,10 +738,9 @@ export default {
 
   heightSettings() {
 
-    console.log(this.v);
     this.modalParams.title = "Get height";
     this.modalParams.function = "height";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the height of the building, with the base height being the highest height of the adjacent streets.";
     this.showModal = true;
 
   },
@@ -788,7 +787,7 @@ export default {
     this.modalParams.title = "One floor overlap";
     this.modalParams.fields = {"Floor number": "floorNumber"}
     this.modalParams.function = "overlapSingle";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the overlap area and percentage of the specified floor, over the base floor (which is by default the ground floor, and can be altered through 'Preprocess -> Set base floor number')";
     this.modalParams.input[ "floorNumber" ] = "";
     this.showModal = true;
 
@@ -812,7 +811,7 @@ export default {
     this.modalParams.title = "One floor overlap bounding box";
     this.modalParams.fields = {"Floor number": "floorNumber"}
     this.modalParams.function = "overlapSingleBbox";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the overlap area and percentage of the specified floor, over the base floor (which is by default the ground floor, and can be altered through 'Preprocess -> Set base floor number'). Takes the bounding boxes of the floors, instead of the actual shapes.";
     this.modalParams.input[ "floorNumber" ] = "";
     this.showModal = true;
 
@@ -835,7 +834,7 @@ export default {
 
     this.modalParams.title = "All floors overlap";
     this.modalParams.function = "overlapAll";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the overlap area and percentage of the all floors, over the base floor (which is by default the ground floor, and can be altered through 'Preprocess -> Set base floor number')";
     this.showModal = true;
 
   },
@@ -857,7 +856,7 @@ export default {
 
     this.modalParams.title = "All floors overlap bounding box";
     this.modalParams.function = "overlapAllBbox";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculates the overlap area and percentage of all floors, over the base floor (which is by default the ground floor, and can be altered through 'Preprocess -> Set base floor number'). Takes the bounding boxes of the floors, instead of the actual shapes.";
     this.showModal = true;
 
   },
@@ -880,13 +879,38 @@ export default {
     this.modalParams.title = "Set base floor number";
     this.modalParams.fields = {"Floor number": "floorNumber"}
     this.modalParams.function = "setBaseFloorNum";
-    this.modalParams.info = "";
+    this.modalParams.info = "Set the base floor for the overlap calculations.";
     this.modalParams.input[ "floorNumber" ] = "";
     this.showModal = true;
 
   },
 
   setBaseFloorNum() {
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/setbasefloornum/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
+
+        console.log( res );
+
+    }.bind( this ));
+
+  },
+
+  setOverlapParamsSettings() {
+
+    this.modalParams.title = "Set overlap parameters";
+    this.modalParams.fields = {"s": "s", "dbscan": "dbscan", "k": "k"}
+    this.modalParams.function = "setOverlapParams";
+    this.modalParams.info = "";
+    this.modalParams.input[ "s" ] = "";
+    this.modalParams.input[ "dbscan" ] = "";
+    this.modalParams.input[ "k" ] = "";
+    this.showModal = true;
+
+  },
+
+  setOverlapParams() {
 
     fetch( this.baseURL + "/analysis/" + this.loadedId + "/setbasefloornum/" + this.modalParams.input[ "floorNumber" ] )
       .then(function(r) { return r.text(); })
