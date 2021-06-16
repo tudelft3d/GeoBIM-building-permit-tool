@@ -139,9 +139,9 @@ def process_upload_multiple(files, callback_url=None):
         paths.append(path)
         file_id += 1
         m.files.append(database.file(id, ''))
-        analyser = geobim.analyser()
-        analyser.load(path)
-        analysers[id] = analyser
+        #analyser = geobim.analyser()
+        #analyser.load(path)
+        #analysers[id] = analyser
 
     session.commit()
     session.close()
@@ -207,6 +207,7 @@ def preload_files():
                 file = FileStorage(f)
                 
                 id = process_upload_multiple([file])
+                d = utils.storage_dir_for_id(id)
                 f.close()
                 settings[fn] = {}
                 settings[fn]["id"] = id
@@ -218,24 +219,32 @@ def preload_files():
     
 
 def init_analyser(id):
+    print("Init analyser, checking if exists...")
     settings_path = IDS_PATH
     with open(settings_path, "r") as settings_file:
         settings = json.load(settings_file)
         for model in settings:
             if settings[model]["id"] == id:
+                print("Creating analyser for " + model)
                 analyser = geobim.analyser()
                 analyser.load(settings[model]["path"])
+                global analysers
                 analysers[id] = analyser
+                print("Finished creating analyser for " + model)
                 
 def init_analysers():
+    global analysers
+
     settings_path = IDS_PATH
     with open(settings_path, "r") as settings_file:
         settings = json.load(settings_file)
         for model in settings:
-            if id not in analysers:
+            if settings[model]["id"] not in analysers:
+                print("Create analyser for " + model)
                 analyser = geobim.analyser()
                 analyser.load(settings[model]["path"])
-                analysers[id] = analyser
+                analysers[settings[model]["id"]] = analyser
+                print("Finished creating analyser for " + model)
                 
 @application.route('/init_all_analysers', methods=['GET'])
 def init_all_analysers():
@@ -243,7 +252,7 @@ def init_all_analysers():
         t = threading.Thread(target=init_analysers)
         t.start()
     else:
-        q.enqueue(preload_files)
+        q.enqueue(init_analysers)
         
     return jsonify("success")
 
@@ -275,6 +284,7 @@ def put_main():
             files.append(f)
 
     id = process_upload_multiple(files)
+    d = utils.storage_dir_for_id(id)
     url = url_for('get_progress', id=id)
 
     if request.accept_mimetypes.accept_json:
@@ -488,16 +498,6 @@ def setoverlapparameters(id, x, y, z):
     return "success"
 
 
-"""
-# Create a file called routes.py with the following
-# example content to add application-specific routes
-
-from main import application
-
-@application.route('/test', methods=['GET'])
-def test_hello_world():
-    return 'Hello world'
-"""
 try:
     import routes
 except ImportError as e:
