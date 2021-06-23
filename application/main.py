@@ -497,6 +497,16 @@ def setoverlapparameters(id, x, y, z):
     analysers[id].setOverlapParameters(x, y, z)
     return "success"
 
+@application.route('/analysis/<id>/getgeoref', methods=['GET'])
+def getgeoref(id):
+    if id not in analysers:
+        init_analyser(id)
+    result = analysers[id].getGeoref()
+    if result != None:
+        return jsonify(result)
+    else:
+        return "No georeferencing information in IFC file", 400
+
 
 try:
     import routes

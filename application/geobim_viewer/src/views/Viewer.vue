@@ -358,6 +358,28 @@ export default {
 
       }
 
+    },
+
+    georef: {
+
+      type: Object,
+      default() {
+
+        return {
+          "direction": [
+            0, 
+            0, 
+            0
+          ], 
+          "location": [
+            0, 
+            0, 
+            0
+          ]
+          };
+
+      }
+
     }
 
   },
@@ -609,6 +631,27 @@ export default {
 
     this.v = v;
     this.v.bimSurfer3D.setCameraControls(this.cameraParams);
+
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/getgeoref" )
+      .then(function(r) { 
+      
+        if (r.status === 200) {
+
+          return r.json(); 
+          
+        } else {
+
+          return undefined;
+
+        } })
+      .then(function(res) {
+
+        if (res != undefined) {
+          this.georef = res;
+          this.v.loadShp( "../../../../shp.js/BRK_SelectieCentrum.shp", this.georef );
+        }
+
+    }.bind( this ));
 
   },
 
