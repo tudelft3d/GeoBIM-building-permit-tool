@@ -307,7 +307,7 @@ export default {
 
     baseURL: {
       type: String,
-      default: "http://127.0.0.1:5000/"
+      default: "http://127.0.0.1:81/"
       // default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
     },
 
@@ -612,26 +612,6 @@ export default {
 
   loadModel( id ) {
 
-    var v = new ifcViewer({
-      domNode: 'right',
-      svgDomNode: 'bottom',
-      modelId: id,
-      withTreeVisibilityToggle: true,
-      n_files: window.NUM_FILES
-    });
-    if (window.SPINNER_CLASS) {
-        v.setSpinner({className: window.SPINNER_CLASS});
-    } else if (window.SPINNER_URL) {
-        v.setSpinner({url: window.SPINNER_URL});
-    }
-    v.load2d();
-    v.load3d();
-    v.loadMetadata('middle');
-    v.loadTreeView('top');
-
-    this.v = v;
-    this.v.bimSurfer3D.setCameraControls(this.cameraParams);
-
     fetch( this.baseURL + "/analysis/" + this.loadedId + "/getgeoref" )
       .then(function(r) { 
       
@@ -648,7 +628,32 @@ export default {
 
         if (res != undefined) {
           this.georef = res;
+        }
+
+        var v = new ifcViewer({
+          domNode: 'right',
+          svgDomNode: 'bottom',
+          modelId: id,
+          withTreeVisibilityToggle: true,
+          n_files: window.NUM_FILES
+        });
+        if (window.SPINNER_CLASS) {
+            v.setSpinner({className: window.SPINNER_CLASS});
+        } else if (window.SPINNER_URL) {
+            v.setSpinner({url: window.SPINNER_URL});
+        }
+        v.load2d();
+        v.load3d(this.georef);
+        v.loadMetadata('middle');
+        v.loadTreeView('top');
+
+        this.v = v;
+        this.v.bimSurfer3D.setCameraControls(this.cameraParams);
+
+        if (res != undefined) {
+
           this.v.loadShp( "../../../../shp.js/BRK_SelectieCentrum.shp", this.georef );
+
         }
 
     }.bind( this ));
