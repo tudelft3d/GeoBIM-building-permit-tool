@@ -37,9 +37,8 @@ DEVELOPMENT = os.environ.get('environment', 'production').lower() == 'developmen
 if DEVELOPMENT:
     engine = create_engine('sqlite:///ifc-pipeline.db', connect_args={'check_same_thread': False})
 else:
-    engine = create_engine(
-        'postgresql://postgres:postgres@%s:5432/bimsurfer2' % os.environ.get('POSTGRES_HOST', 'localhost'))
-
+    engine = create_engine('postgresql://postgres:postgres@%s:5432/bimsurfer2' % os.environ.get('POSTGRES_HOST', 'localhost'))
+    
 Session = sessionmaker(bind=engine)
 
 Base = declarative_base()
@@ -57,13 +56,15 @@ class model(Base, Serializable):
     code = Column(String)
     filename = Column(String)
     files = relationship("file")
-
+    
     progress = Column(Integer, default=-1)
     date = Column(DateTime, server_default=func.now())
 
     def __init__(self, code, filename):
         self.code = code
         self.filename = filename
+
+
 
 
 class file(Base, Serializable):
@@ -72,7 +73,7 @@ class file(Base, Serializable):
     id = Column(Integer, primary_key=True)
     code = Column(String)
     filename = Column(String)
-
+ 
     model_id = Column(Integer, ForeignKey('models.id'))
 
     progress = Column(Integer, default=-1)
@@ -81,7 +82,7 @@ class file(Base, Serializable):
     def __init__(self, code, filename):
         self.code = code
         self.filename = filename
-
+        
         self.model_id = Column(Integer, ForeignKey('models.id'))
 
 

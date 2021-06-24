@@ -95,21 +95,12 @@ class geometry_generation_task(task):
     est_time = 10
 
     def execute(self, directory, id):
-        # Remove georeferencing from IFC
-        # TODO: solve this problem with IfcConvert itself instead, see GitHub issue
-        tmp_path = os.path.join(directory, (id + "_ungeoref" + ".ifc"))
-        ifc = open_ifc_file(os.path.join(directory, (id + ".ifc")))
-        site = ifc.by_type("IfcSite")[0]
-        site.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
-        ifc.write(tmp_path)
-        
-        proc = subprocess.Popen([IFCCONVERT, tmp_path, id + ".glb", "-qyv", "--log-format", "json", "--log-file", "log.json"], cwd=directory, stdout=subprocess.PIPE)
+        proc = subprocess.Popen([IFCCONVERT, id + ".ifc", id + ".glb", "-qyv", "--log-format", "json", "--log-file", "log.json"], cwd=directory, stdout=subprocess.PIPE)
         i = 0
         while True:
             ch = proc.stdout.read(1)
 
             if not ch and proc.poll() is not None:
-                os.remove(tmp_path)
                 break
 
             if ch and ord(ch) == ord('.'):

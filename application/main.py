@@ -42,17 +42,11 @@ import utils
 import worker
 import database
 import GEOBIM_Tool as geobim
-# from geobim_analysis import analyser
 
 application = Flask(__name__)
 dropzone = Dropzone(application)
 
-# application.config['DROPZONE_UPLOAD_MULTIPLE'] = True
-# application.config['DROPZONE_PARALLEL_UPLOADS'] = 3
-
 DEVELOPMENT = os.environ.get('environment', 'production').lower() == 'development'
-
-DEVELOPMENT = True
 
 if not DEVELOPMENT and os.path.exists("/version"):
     PIPELINE_POSTFIX = "." + open("/version").read().strip()
@@ -63,7 +57,7 @@ if not DEVELOPMENT:
     # In some setups this proved to be necessary for url_for() to pick up HTTPS
     application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1)
     
-MODELS_PATH = "../models-preloaded/"
+MODELS_PATH = "./models-preloaded/"
 IDS_PATH = MODELS_PATH + "ids.json"
 
 CORS(application)
@@ -88,10 +82,22 @@ if not DEVELOPMENT:
 
     q = Queue(connection=Redis(host=os.environ.get("REDIS_HOST", "localhost")), default_timeout=3600)
 
-# geobim.init()
-# app = geobim.application()
-# app.start()
+def init_analysers():
+    global analysers
+
+    settings_path = IDS_PATH
+    with open(settings_path, "r") as settings_file:
+        settings = json.load(settings_file)
+        for model in settings:
+            if settings[model]["id"] not in analysers:
+                print("Create analyser for " + model)
+                analyser = geobim.analyser()
+                analyser.load(settings[model]["path"])
+                analysers[settings[model]["id"]] = analyser
+                print("Finished creating analyser for " + model)
+                
 analysers = {}
+init_analysers()
 
 @application.route('/', methods=['GET'])
 def get_main():
@@ -230,20 +236,6 @@ def init_analyser(id):
                 analyser.load(settings[model]["path"])
                 global analysers
                 analysers[id] = analyser
-                print("Finished creating analyser for " + model)
-                
-def init_analysers():
-    global analysers
-
-    settings_path = IDS_PATH
-    with open(settings_path, "r") as settings_file:
-        settings = json.load(settings_file)
-        for model in settings:
-            if settings[model]["id"] not in analysers:
-                print("Create analyser for " + model)
-                analyser = geobim.analyser()
-                analyser.load(settings[model]["path"])
-                analysers[settings[model]["id"]] = analyser
                 print("Finished creating analyser for " + model)
                 
 @application.route('/init_all_analysers', methods=['GET'])
