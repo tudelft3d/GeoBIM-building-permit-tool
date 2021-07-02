@@ -299,6 +299,9 @@
 <script>
 
 import axios from 'axios';
+import shp from 'shpjs';
+import earcut from 'earcut';
+import * as THREE from 'three';
 
 export default {
   name: 'Viewer',
@@ -394,6 +397,12 @@ export default {
       v: undefined
 
     };
+
+  },
+
+  mounted: function() {
+
+    // this.parseGeojson();
 
   },
 
@@ -610,7 +619,7 @@ export default {
     
   },
 
-  loadModel( id ) {
+  async loadModel( id ) {
 
     fetch( this.baseURL + "/analysis/" + this.loadedId + "/getgeoref" )
       .then(function(r) { 
@@ -626,8 +635,11 @@ export default {
         } })
       .then(function(res) {
 
+        var loadBasemap = false;
+
         if (res != undefined) {
           this.georef = res;
+          loadBasemap = true;
         }
 
         var v = new ifcViewer({
@@ -650,13 +662,93 @@ export default {
         this.v = v;
         this.v.bimSurfer3D.setCameraControls(this.cameraParams);
 
-        if (res != undefined) {
+        // this.v.loadShp( "../../../../shp.js/BRK_SelectieCentrum.shp", this.georef );
 
-          this.v.loadShp( "../../../../shp.js/BRK_SelectieCentrum.shp", this.georef );
+
+        return loadBasemap;
+
+    }.bind( this ))
+    .then( async function( load ) {
+
+      // if ( load || true ) {
+
+        const threeGroup = await this.parseGeojson();
+        this.v.loadGroup( threeGroup );
+
+      // }
+
+    }.bind( this ));
+
+  },
+
+  async parseGeojson() {
+
+    var shpFile = await fetch('BRK_SelectieCentrum.shp');
+    var shpBuf = await shpFile.arrayBuffer();
+    var dbfFile = await fetch('BRK_SelectieCentrum.dbf');
+    var dbfBuf = await dbfFile.arrayBuffer();
+
+    var geojson = await shp.combine([shp.parseShp(shpBuf), shp.parseDbf(dbfBuf)]);
+
+    var group = new THREE.Group();
+
+    for (var i = 0; i < geojson.features.length; i ++) {
+
+        var feature = geojson.features[i];
+
+        var geom = feature.geometry.coordinates;
+        var geom2 = earcut.flatten(geom);
+        var triangles = earcut(geom2.vertices, geom2.holes, geom2.dimensions);
+
+        var vertices3d = [];
+        for ( var t = 0; t < triangles.length; t++ ) {
+
+          const v = triangles[t];
+          vertices3d.push(geom2.vertices[v*2], 0, - geom2.vertices[v*2+1]);
 
         }
 
-    }.bind( this ));
+        var threeGeom = new THREE.BufferGeometry();
+        threeGeom.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices3d, 3 ) );
+        const material = new THREE.MeshBasicMaterial( { color: 0xdbdad7, depthWrite: false } );
+
+        const mesh = new THREE.Mesh( threeGeom, material );
+        group.add( mesh );
+
+        for ( var g = 0; g < geom.length; g++ ) {
+
+          var points = [];
+          for ( var v = 0; v < geom[g].length; v++ ) {
+
+            points.push( new THREE.Vector3( geom[g][v][0], 0, - geom[g][v][1] ) );
+
+          }
+
+          points.push( points[ points.length - 1] );
+
+          const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x000000,
+            linewidth: 1,
+            depthWrite: false
+          });
+
+          const lineGeom = new THREE.BufferGeometry().setFromPoints( points );
+          const line = new THREE.Line( lineGeom, lineMaterial);
+          line.renderOrder = 1;
+          group.add( line );
+
+        }
+
+    }
+
+    const location = this.georef.location;
+    // const location = [93208.7265625, 437072.21875, 0];
+    
+    group.translateX(- location[0]);
+    group.translateY(- location[2]);
+    group.translateZ( location[1] );
+
+    return group;
 
   },
 
