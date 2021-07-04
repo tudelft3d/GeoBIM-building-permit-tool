@@ -27,6 +27,8 @@ from __future__ import print_function
 import os
 import json
 import threading
+import logging
+import shutil
 
 from collections import defaultdict, namedtuple
 from flask_dropzone import Dropzone
@@ -81,20 +83,6 @@ if not DEVELOPMENT:
     from rq import Queue
 
     q = Queue(connection=Redis(host=os.environ.get("REDIS_HOST", "localhost")), default_timeout=3600)
-
-def init_analysers():
-    global analysers
-
-    settings_path = IDS_PATH
-    with open(settings_path, "r") as settings_file:
-        settings = json.load(settings_file)
-        for model in settings:
-            if settings[model]["id"] not in analysers:
-                print("Create analyser for " + model)
-                analyser = geobim.analyser()
-                analyser.load(settings[model]["path"])
-                analysers[settings[model]["id"]] = analyser
-                print("Finished creating analyser for " + model)
 
 @application.route('/', methods=['GET'])
 def get_main():
@@ -170,9 +158,9 @@ def process_upload_multiple(files, callback_url=None):
 
 @application.route('/preloaded_models_info', methods=['GET'])
 def preloaded_models_info():
-    
-    path = MODELS_PATH
-    fns = [fn for fn in os.listdir(path) if os.path.isfile(os.path.join(path, fn)) and fn[-4:] == ".ifc"]
+    with open(IDS_PATH, 'r') as f:
+        settings = json.load(f)
+        fns = list(settings.keys())
     
     return jsonify(fns)
 
@@ -221,6 +209,8 @@ def preload_files():
     
 
 def init_analyser(id):
+    global analysers
+    
     print("Init analyser, checking if exists...")
     settings_path = IDS_PATH
     with open(settings_path, "r") as settings_file:
@@ -230,19 +220,44 @@ def init_analyser(id):
                 print("Creating analyser for " + model)
                 analyser = geobim.analyser()
                 analyser.load(settings[model]["path"])
-                global analysers
                 analysers[id] = analyser
                 print("Finished creating analyser for " + model)
                 
-@application.route('/init_all_analysers', methods=['GET'])
+def init_analysers():
+    global analysers
+
+    settings_path = IDS_PATH
+    
+    f = open(settings_path, "r")
+    settings = json.load(f)
+    print(settings)
+    f.close()
+        
+    for model in settings:
+        if settings[model]["id"] not in analysers:
+            print("Create analyser for " + model)
+            analyser = geobim.analyser()
+            analyser.load(settings[model]["path"])
+            analysers[settings[model]["id"]] = analyser
+            print("Finished creating analyser for " + model)
+        else:
+            print("Analyser for " + model + " already exists")
+                
+# @application.route('/init_all_analysers', methods=['GET'])
 def init_all_analysers():
+    
+    t = threading.Thread(target=init_analysers)
+    t.start()
+    
+    """
     if DEVELOPMENT:
         t = threading.Thread(target=init_analysers)
         t.start()
     else:
         q.enqueue(init_analysers)
+    """
         
-    return jsonify("success")
+    # return jsonify("success")
 
 @application.route('/upload_ifc', methods=['POST'])
 def put_main():
@@ -396,99 +411,73 @@ def get_model(fn):
 
 @application.route('/analysis/<id>/wkt/<floornumber>', methods=['GET'])
 def floor_wkt(id, floornumber):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].footprintWKT(floornumber)
     return jsonify({"wkt": result})
 
 @application.route('/analysis/<id>/overhangsingle/<floornumber>', methods=['GET'])
 def overhangsingle(id, floornumber):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].OverhangOneFloor(floornumber)
     return jsonify(result)
 
 @application.route('/analysis/<id>/overhangall', methods=['GET'])
 def overhangall(id):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].OverhangAll_new()
     return jsonify(result)
 
 @application.route('/analysis/<id>/height', methods=['GET'])
 def height(id):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].GetHeight()
     return result
 
 @application.route('/analysis/<id>/baseheight/<floornumber>', methods=['GET'])
 def baseheight(id, floornumber):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].GetBaseHeight(floornumber)
     return result
 
 @application.route('/analysis/<id>/overlapsingle/<floornumber>', methods=['GET'])
 def overlapsingle(id, floornumber):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].OverlapOneFloor(floornumber)
     return result
 
 @application.route('/analysis/<id>/overlapall', methods=['GET'])
 def overlapall(id):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].OverlapAll()
     return result
 
 @application.route('/analysis/<id>/overlapsinglebbox/<floornumber>', methods=['GET'])
 def overlapsinglebbox(id, floornumber):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].OverlapOneFloorOBB(floornumber)
     return result
 
 @application.route('/analysis/<id>/overlapallbbox', methods=['GET'])
 def overlapallbbox(id):
-    if id not in analysers:
-        init_analyser(id)
     result = analysers[id].OverlapAllOBB()
     return result
     
 @application.route('/analysis/<id>/setbasefloornum/<floornumber>', methods=['GET'])
 def setbasefloornum(id, floornumber):
-    if id not in analysers:
-        init_analyser(id)
     analysers[id].setBaseFloornum()
     return "success"
 
 @application.route('/analysis/<id>/addgeoreferencepoint/<xyz>', methods=['GET'])
 def addgeoreferencepoint(id, x, y, z):
-    if id not in analysers:
-        init_analyser(id)
     analysers[id].setBaseFloornum()
     return "success"
 
 @application.route('/analysis/<id>/setoverhangdir/<direction>', methods=['GET'])
 def setoverhangdir(id, direction):
-    if id not in analysers:
-        init_analyser(id)
     analysers[id].setOverhangdir(direction)
     return "success"
 
 @application.route('/analysis/<id>/setoverlapparameters', methods=['GET'])
 def setoverlapparameters(id, x, y, z):
-    if id not in analysers:
-        init_analyser(id)
     analysers[id].setOverlapParameters(x, y, z)
     return "success"
 
 @application.route('/analysis/<id>/getgeoref', methods=['GET'])
 def getgeoref(id):
-    if id not in analysers:
-        init_analyser(id)
+    print(analysers.keys())
+    
     result = analysers[id].getGeoref()
     if result != None:
         return jsonify(result)
@@ -496,9 +485,16 @@ def getgeoref(id):
         return "No georeferencing information in IFC file", 400
     
     
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    # app.logger.handlers = gunicorn_logger.handlers
+    #app.logger.setLevel(gunicorn_logger.level)
+    
+# Move preloaded data to correct folder because it doesn't work doing it directly in the Dockerfile for some reason
+shutil.copytree("/www/models-preloaded/G", "/data/G", dirs_exist_ok=True)
 analysers = {}
-preload_files()
-init_analysers()
+init_all_analysers()
+print("Initialising analysers done")
 
 
 try:
