@@ -95,9 +95,6 @@ def init_analysers():
                 analyser.load(settings[model]["path"])
                 analysers[settings[model]["id"]] = analyser
                 print("Finished creating analyser for " + model)
-                
-analysers = {}
-init_analysers()
 
 @application.route('/', methods=['GET'])
 def get_main():
@@ -181,7 +178,6 @@ def preloaded_models_info():
 
 @application.route('/load_preloaded_file/<fn>', methods=['GET'])
 def load_preloaded_file(fn):
-    path = MODELS_PATH + fn
     ids_f = open(IDS_PATH)
     ids = json.load(ids_f)
     id = ids[fn]["id"]
@@ -498,6 +494,11 @@ def getgeoref(id):
         return jsonify(result)
     else:
         return "No georeferencing information in IFC file", 400
+    
+    
+analysers = {}
+preload_files()
+init_analysers()
 
 
 try:
