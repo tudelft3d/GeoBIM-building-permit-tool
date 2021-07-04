@@ -310,8 +310,8 @@ export default {
 
     baseURL: {
       type: String,
-      default: "http://127.0.0.1:81/"
-      // default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
+      // default: "http://127.0.0.1:81/"
+      default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
     },
 
     filename: {
@@ -683,9 +683,9 @@ export default {
 
   async parseGeojson() {
 
-    var shpFile = await fetch('BRK_SelectieCentrum.shp');
+    var shpFile = await fetch('shp/Wegvakonderdelen_subset.shp');
     var shpBuf = await shpFile.arrayBuffer();
-    var dbfFile = await fetch('BRK_SelectieCentrum.dbf');
+    var dbfFile = await fetch('shp/Wegvakonderdelen_subset.dbf');
     var dbfBuf = await dbfFile.arrayBuffer();
 
     var geojson = await shp.combine([shp.parseShp(shpBuf), shp.parseDbf(dbfBuf)]);
@@ -742,7 +742,7 @@ export default {
     }
 
     const location = this.georef.location;
-    // const location = [93208.7265625, 437072.21875, 0];
+    // const location = [93125.72852, 436666.3701, 5.376];
     
     group.translateX(- location[0]);
     group.translateY(- location[2]);
