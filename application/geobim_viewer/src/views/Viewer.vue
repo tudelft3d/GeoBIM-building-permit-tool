@@ -33,6 +33,13 @@
 
               </a>
 
+              <a class="navbar-item">
+
+                <input type="checkbox" id="checkbox" v-model="checked" @change="performanceTest = !performanceTest">
+                <label for="checkbox">Performance test</label>
+                
+              </a>
+
               
             </div>
 
@@ -78,9 +85,9 @@
                 Add georeference point
                 </a>
 
-                <a class="navbar-item" @click="hoi()">
+                <!-- <a class="navbar-item" @click="hoi()">
                 Set overhang direction
-                </a>
+                </a> -->
 
                 <a class="navbar-item" @click="setOverlapParamsSettings()">
                 Set overlap parameters
@@ -394,7 +401,8 @@ export default {
       showModal: false,
       showFilePicker: false,
       loadedId: "",
-      v: undefined
+      v: undefined,
+      performanceTest: false
 
     };
 
@@ -655,7 +663,7 @@ export default {
             v.setSpinner({url: window.SPINNER_URL});
         }
         v.load2d();
-        v.load3d(this.georef);
+        v.load3d(this.performanceTest, this.georef);
         v.loadMetadata('middle');
         v.loadTreeView('top');
 
@@ -680,6 +688,36 @@ export default {
     }.bind( this ));
 
   },
+  
+  adjacentGeom(geom, point, threshold) {
+
+    var centroid = [ 0,0 ];
+    var total = 0;
+  
+    for ( var i = 0; i < geom.length; i++ ) {
+
+      for ( var j = 0; j < geom[i].length; j++ ) {
+
+        total += 1;
+        centroid[0] += geom[i][j][0];
+        centroid[1] += geom[i][j][1];
+
+      }
+
+    }
+
+    if ( total != 0 ) {
+
+      centroid[0] /= total;
+      centroid[1] /= total;
+
+    }
+
+    const distance = Math.sqrt( Math.pow( centroid[0] - point[0], 2 ) + Math.pow( centroid[1] - point[1], 2 ) );
+
+    return distance <= threshold;
+
+  },
 
   async parseGeojson() {
 
@@ -697,6 +735,14 @@ export default {
         var feature = geojson.features[i];
 
         var geom = feature.geometry.coordinates;
+        
+        // TODO: use IFC model bounding box instead of georef point, and polygon-point distance formula instead of centroid
+        if ( !this.adjacentGeom(geom, this.georef.location, 50) ) {
+
+          continue;
+
+        }
+
         var geom2 = earcut.flatten(geom);
         var triangles = earcut(geom2.vertices, geom2.holes, geom2.dimensions);
 
