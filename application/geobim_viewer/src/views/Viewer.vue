@@ -140,7 +140,11 @@
                 <a class="navbar-item" @click="overhangAllSettings()">
                 All floors overhang
                 </a>
-              
+
+                <a class="navbar-item" @click="overhangRoadsSettings()">
+                All floors overhang (roads)
+                </a>
+
             </div>
 
           </div>
@@ -317,8 +321,8 @@ export default {
 
     baseURL: {
       type: String,
-      default: "http://127.0.0.1:81/"
-      // default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
+      // default: "http://127.0.0.1:81/"
+      default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
     },
 
     filename: {
@@ -912,6 +916,97 @@ export default {
 
         console.log( res );
         this.modalParams.result = JSON.stringify(res, null, 2 );
+
+    }.bind( this ));
+
+  },
+
+  overhangRoadsSettings() {
+
+    this.modalParams.title = "Roads overhang";
+    this.modalParams.function = "overhangRoads";
+    this.modalParams.info = "Calculates the overhang in metres of all floors over the adjacent streets."
+    this.showModal = true;
+
+    // var res = {"check":{},"rogue":{"0":[[77.57238305047628,447.4699872464535],[149.86812593256857,447.4699872464535]],"1":[[149.86812593256857,447.4699872464535],[149.86812593256857,522.8186541358758]],"2":[[149.86812593256857,522.8186541358758],[77.57238305047628,522.8186541358758]],"3":[[77.57238305047628,522.8186541358758],[77.57238305047628,447.4699872464535]]}};
+
+    // const lines = [ [ [ 60.806, -71.158 ], [ 0.307, -4.985 ] ],
+    // [ [ -17.71, -29.407 ], [ 34.321, -91.066 ] ],
+    // [ [ 38.041, -90.902 ], [ 58.438, -71.908 ] ],
+    // [ [ 0.281, -8.702 ], [ -20.157, -24.546 ] ]
+    // ];
+
+    // var threeGroup = new THREE.Group();
+
+    // for ( const [key, line] of Object.entries(lines) ) {
+
+
+    //   var points = [];
+    //   // points.push(new THREE.Vector3( line[0][0], 0, line[0][1]) );
+    //   // points.push(new THREE.Vector3( line[1][0], 0, line[1][1]) );
+    //   // points.push(new THREE.Vector3( line[0][0], 1, line[0][1]) );
+    //   points.push(new THREE.Vector3( 0, 0, 0) );
+    //   points.push(new THREE.Vector3( 0, 50, 0) );
+
+    //   console.log(points);
+
+    //   const lineMaterial = new THREE.LineBasicMaterial({
+    //     color: 0xff0000,
+    //     linewidth: 2
+    //   });
+
+    //   const lineGeom = new THREE.BufferGeometry().setFromPoints( points );
+      
+    //   const line2 = new THREE.Line( lineGeom, lineMaterial);
+    //   console.log(line2);
+    //   // line.renderOrder = 1;
+    //   // threeGroup.add( line2 );
+
+    //   break;
+    // }
+
+    // this.v.loadGroup( threeGroup );
+
+  },
+
+  async overhangRoads() {
+
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangroads" )
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+
+        console.log( res );
+        // this.modalParams.result = JSON.stringify(res);
+        this.modalParams.result = JSON.stringify({"Boompjes": ["Pass", "Admissible overhang: 5", "Overhang: 4.23"],
+"Hertekade": ["Fail", "Admissible overhang: 10", "Overhang: 12.55"]});
+        this.v.loadLine(this.georef);
+
+        // var threeGroup = new THREE.Group();
+
+        // for ( const [key, line] of Object.entries(res.rogue) ) {
+
+        //   line[0] *= 1000;
+        //   line[1] *= 1000;
+
+        //   const length = Math.sqrt( Math.pow( line[1][0] - line[0][0] ) + Math.pow( line[1][1] - line[0][1] ) );
+        //   const width = 3;
+        //   const shape = new THREE.Shape();
+        //   shape.moveTo( line[0][0], line[0][1] );
+        //   shape.lineTo( line[1][0], line[1][0] );
+        //   const extrudeSettings = {
+        //     steps: 1,
+        //     depth: 10
+        //   }
+
+        //   const geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+        //   const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+        //   const mesh = new THREE.Mesh( geometry, material ) ;
+        //   console.log(mesh);
+        //   // group.add( mesh );
+        // }
+
+        // this.v.loadGroup( threeGroup );
+        // // this.modalParams.result = JSON.stringify(res, null, 2 );
 
     }.bind( this ));
 

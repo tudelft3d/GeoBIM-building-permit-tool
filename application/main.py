@@ -474,6 +474,26 @@ def setoverlapparameters(id, x, y, z):
     analysers[id].setOverlapParameters(x, y, z)
     return "success"
 
+@application.route('/analysis/<id>/overhangroads', methods=['GET'])
+def overhangroads(id):
+    guidelines = {
+            'Boompjes': 0.5,
+            'Hertekade': 0.2
+            }
+    
+    ifc_path = None
+    ids = open(IDS_PATH, 'r')
+    settings = json.load(ids)
+    ids.close()
+    for k, v in settings.items():
+        if v["id"] == id:
+            ifc_path = v["path"]
+            break
+    
+    result = analysers[id].overhangRoads(guidelines, ifc_path)
+    
+    return jsonify({"check": result[0], "rogue": result[1]})
+
 @application.route('/analysis/<id>/getgeoref', methods=['GET'])
 def getgeoref(id):
     result = analysers[id].getGeoref()
