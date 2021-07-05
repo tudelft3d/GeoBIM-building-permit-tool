@@ -317,8 +317,8 @@ export default {
 
     baseURL: {
       type: String,
-      // default: "http://127.0.0.1:81/"
-      default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
+      default: "http://127.0.0.1:81/"
+      // default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
     },
 
     filename: {
@@ -1131,7 +1131,7 @@ export default {
     this.modalParams.title = "Parking units calculation";
     this.modalParams.fields = {"Zone type (A, B, C)": "zoneType"}
     this.modalParams.function = "parkingUnits";
-    this.modalParams.info = "";
+    this.modalParams.info = "Calculate parking requirements. Upload of XLSX file currently not supported.";
     this.modalParams.input[ "zoneType" ] = "";
     this.modalParams.file = true;
     this.showModal = true;
@@ -1140,30 +1140,43 @@ export default {
 
   parkingUnits(){
 
-      const file = this.modalParams.file;
-      const form = new FormData();
-      form.append("file", file);
+    fetch( this.baseURL + '/analysis/' + this.loadedId + "/parking/" + this.modalParams.input.zoneType )
+      .then(function(r) { return r.text(); })
+      .then(function(res) {
 
-      // axios.post( this.baseURL + 'upload_ifc', form, {
+        console.log( res );
+        this.modalParams.result = res 
 
-      //     headers: {
+    }.bind( this ));
 
-      //       'Content-Type': 'multipart/form-data'
+    // POST request with XLSX file:
+    // const file = this.modalParams.file;
+    // const form = new FormData();
+    // form.append("file", file);
 
-      //     }
+    // if ( !file || file.name.slice(-5) != ".xlsx" ) {
 
-      // })
+    //   alert( "Please choose an XLSX file!" );
+    //   return;
 
-      // .then( function ( res ) {
+    // }
 
-      //   const url = res.data[ 'url' ];
+    // axios.post( this.baseURL + '/analysis/' + this.loadedId + "/parking/" + this.modalParams.input.zoneType, form, {
 
-      //   this.poll( this.baseURL + url );
+    //     headers: {
 
-      // }
-      
-      // .bind( this ))
-      // .catch(console.error);
+    //       'Content-Type': 'multipart/form-data'
+
+    //     }
+
+    // })
+
+    // .then( function ( res ) {
+
+    // }
+    
+    // .bind( this ))
+    // .catch(console.error);
 
   },
 

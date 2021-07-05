@@ -476,19 +476,49 @@ def setoverlapparameters(id, x, y, z):
 
 @application.route('/analysis/<id>/getgeoref', methods=['GET'])
 def getgeoref(id):
-    print(analysers.keys())
-    
     result = analysers[id].getGeoref()
     if result != None:
         return jsonify(result)
     else:
         return "No georeferencing information in IFC file", 400
     
+@application.route('/analysis/<id>/parking/<zone>', methods=['POST', 'GET'])
+def parking(id, zone):
+    
+    ifc_path = None
+    ids = open(IDS_PATH, 'r')
+    settings = json.load(ids)
+    ids.close()
+    for k, v in settings.items():
+        if v["id"] == id:
+            ifc_path = v["path"]
+            break
+
+    if request.method == 'GET':
+        result = analysers[id].parkingCalculate(ifc_path, zone)
+    
+    elif request.method == 'POST':
+        result = None
+        
+        for key,f in request.files.items():
+            if key.startswith('file') and key.endswith('xlsx'):
+                print(f.filename)
+                fn = f.filename
+                p = os.path.join("/data/", fn)
+                f.save(p)
+                
+                result = analysers[id].parkingCalculate(ifc_path, zone)
+    
+    if result:
+        return result
+    else:
+        return "Error", 400
+
     
 if __name__ != '__main__':
     gunicorn_logger = logging.getLogger('gunicorn.error')
-    # app.logger.handlers = gunicorn_logger.handlers
-    #app.logger.setLevel(gunicorn_logger.level)
+    application.logger.handlers = gunicorn_logger.handlers
+    application.logger.setLevel(gunicorn_logger.level)
     
 # Move preloaded data to correct folder because it doesn't work doing it directly in the Dockerfile for some reason
 shutil.copytree("/www/models-preloaded/G", "/data/G", dirs_exist_ok=True)
