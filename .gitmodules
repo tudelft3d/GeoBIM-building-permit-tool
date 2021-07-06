@@ -4,6 +4,3 @@
 [submodule "application/GEOBIM_Tool"]
 	path = application/GEOBIM_Tool
 	url = https://github.com/jliempt/GEOBIM_Tool.git
-[submodule "application/geobim_viewer/public/shp.js"]
-	path = application/geobim_viewer/public/shp.js
-	url = https://github.com/jliempt/shp.js.git
