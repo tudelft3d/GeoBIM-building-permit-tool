@@ -30,14 +30,12 @@ import threading
 import logging
 import shutil
 
-from collections import defaultdict, namedtuple
-from flask_dropzone import Dropzone
+from collections import namedtuple
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.datastructures import FileStorage
 from flask import Flask, request, send_file, render_template, abort, jsonify, redirect, url_for, make_response
 from flask_cors import CORS
-from flask_basicauth import BasicAuth
 from flasgger import Swagger
 
 import utils
@@ -46,7 +44,6 @@ import database
 import GEOBIM_Tool as geobim
 
 application = Flask(__name__)
-dropzone = Dropzone(application)
 
 DEVELOPMENT = os.environ.get('environment', 'production').lower() == 'development'
 
@@ -59,8 +56,12 @@ if not DEVELOPMENT:
     # In some setups this proved to be necessary for url_for() to pick up HTTPS
     application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1)
     
-MODELS_PATH = "./models-preloaded/"
-IDS_PATH = MODELS_PATH + "ids.json"
+if os.environ.get("FLASK_ENV") == "development":
+    MODELS_PATH = "../models-preloaded/"
+    IDS_PATH = MODELS_PATH + "ids_development.json"
+else:
+    MODELS_PATH = "./models-preloaded/"
+    IDS_PATH = MODELS_PATH + "ids_production.json"
 
 CORS(application)
 application.config['SWAGGER'] = {
@@ -541,7 +542,8 @@ if __name__ != '__main__':
     application.logger.setLevel(gunicorn_logger.level)
     
 # Move preloaded data to correct folder because it doesn't work doing it directly in the Dockerfile for some reason
-shutil.copytree("/www/models-preloaded/G", "/data/G", dirs_exist_ok=True)
+if os.environ.get("FLASK_ENV") != "development":
+    shutil.copytree("/www/models-preloaded/G", "/data/G", dirs_exist_ok=True)
 analysers = {}
 init_all_analysers()
 print("Initialising analysers done")

@@ -321,8 +321,7 @@ export default {
 
     baseURL: {
       type: String,
-      // default: "http://127.0.0.1:81/"
-      default: "http://godzilla.bk.tudelft.nl/geobim-tool/analyse/"
+      default: process.env.VUE_APP_FLASK_PATH
     },
 
     filename: {
@@ -413,8 +412,6 @@ export default {
   },
 
   mounted: function() {
-
-    // this.parseGeojson();
 
   },
 
@@ -659,7 +656,8 @@ export default {
           svgDomNode: 'bottom',
           modelId: id,
           withTreeVisibilityToggle: true,
-          n_files: window.NUM_FILES
+          n_files: window.NUM_FILES,
+          flaskPath: process.env.VUE_APP_FLASK_PATH
         });
         if (window.SPINNER_CLASS) {
             v.setSpinner({className: window.SPINNER_CLASS});
