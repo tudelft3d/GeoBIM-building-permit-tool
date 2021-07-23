@@ -10,8 +10,8 @@ Based on [ifc-pipeline](https://github.com/AECgeeks/ifc-pipeline):
 1. Install Docker Compose and npm
 2.  `git submodule update --init --recursive` in the cloned repository
 3.  `npm i` in `application/geobim_viewer`
-4.  `sudo docker-compose up -d` in the root directory
-5.  `npm run serve` in `application/geobim_viewer`
+4.  `sudo docker-compose up -d` in the root directory, which will keep the backend running (do `sudo docker-compose down` to shut it down).
+5.  `npm run serve` in `application/geobim_viewer`, which will run the frontend until you close it.
 
 You probably want to change the amount of gunicorn and database workers in  `docker-compose.yml` for production (`-w` and `NUM_WORKERS` respectively).
 
