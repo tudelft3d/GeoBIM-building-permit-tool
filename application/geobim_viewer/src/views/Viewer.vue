@@ -312,6 +312,7 @@ import axios from 'axios';
 import shp from 'shpjs';
 import earcut from 'earcut';
 import * as THREE from 'three';
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export default {
   name: 'Viewer',
@@ -669,7 +670,7 @@ export default {
         v.loadTreeView('top');
 
         this.v = v;
-        this.v.bimSurfer3D.setCameraControls(this.cameraParams);
+        this.v.bimSurfer3D.setCameraControls( this.cameraParams );
 
         // this.v.loadShp( "../../../../shp.js/BRK_SelectieCentrum.shp", this.georef );
 
@@ -720,25 +721,41 @@ export default {
 
   },
 
+  fontLoader() {
+
+    return new Promise( ( resolve, reject ) => {
+
+      const loader = new THREE.FontLoader();
+      loader.load( 'helvetiker_regular.typeface.json', data => resolve( data ), null, reject );
+
+    } )
+
+  },
+
   async parseGeojson() {
 
     var shpFile = await fetch('shp/Wegvakonderdelen_subset.shp');
     var shpBuf = await shpFile.arrayBuffer();
     var dbfFile = await fetch('shp/Wegvakonderdelen_subset.dbf');
     var dbfBuf = await dbfFile.arrayBuffer();
-
     var geojson = await shp.combine([shp.parseShp(shpBuf), shp.parseDbf(dbfBuf)]);
 
     var group = new THREE.Group();
+    const font = await this.fontLoader();
+    const meshColor = 0xdbdad7;
+    const lineColor = 0x111111;
+
+    var meshGeometries = [];
+    var lineGeometries = [];
+    var lineIndices = [];
 
     for (var i = 0; i < geojson.features.length; i ++) {
 
         var feature = geojson.features[i];
-
         var geom = feature.geometry.coordinates;
         
         // TODO: use IFC model bounding box instead of georef point, and polygon-point distance formula instead of centroid
-        if ( !this.adjacentGeom(geom, this.georef.location, 50) ) {
+        if ( !this.adjacentGeom(geom, this.georef.location, 140) ) {
 
           continue;
 
@@ -757,40 +774,86 @@ export default {
 
         var threeGeom = new THREE.BufferGeometry();
         threeGeom.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices3d, 3 ) );
-        const material = new THREE.MeshBasicMaterial( { color: 0xdbdad7, depthWrite: false } );
+        meshGeometries.push( threeGeom );
 
+        var color = 0xdbdad7;
+        const material = new THREE.MeshBasicMaterial( { color: color, depthWrite: false } );
         const mesh = new THREE.Mesh( threeGeom, material );
-        group.add( mesh );
+        
+        const id = feature.properties.ID;
+        mesh.name = id;
 
+        if ( id == '358205' || id == '35152' || id == '35238'  ) {
+
+          const bbox = new THREE.Box3().setFromObject( mesh );
+
+          console.log( feature.properties.STRAAT );
+
+          const textGeom = new THREE.TextGeometry( feature.properties.STRAAT, {
+            font: font,
+            size: 5,
+            height: 0,
+            curveSegments: 3
+          } );
+
+          // const lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
+          const meshMaterial = new THREE.MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true } );
+
+          const line = new THREE.LineSegments( textGeom, lineMaterial );
+          const textMesh = new THREE.Mesh( textGeom, meshMaterial );
+          textMesh.renderOrder = 2;
+          const center = bbox.getCenter();
+          textMesh.position.set( center.x, center.y, center.z );
+          textMesh.rotateX( - Math.PI / 2 );
+          // const maxZ = Math.abs( bbox.max.z );
+          // const angle = Math.atan2( maxZ, 1 );
+
+          textMesh.rotateZ( 0.8 );
+          group.add( textMesh );
+
+        }
+        
         for ( var g = 0; g < geom.length; g++ ) {
 
-          var points = [];
-          for ( var v = 0; v < geom[g].length; v++ ) {
+          var line = [];
+          for ( var v = 0; v < geom[ g ].length; v++ ) {
 
-            points.push( new THREE.Vector3( geom[g][v][0], 0, - geom[g][v][1] ) );
+            lineGeometries.push( geom[ g ][ v ][ 0 ], 0, - geom[ g ][ v ][ 1 ] );
+
+            if ( v != 0 ) {
+
+              line.push( lineGeometries.length / 3 - 2, lineGeometries.length / 3 - 1 );
+
+            }
 
           }
 
-          points.push( points[ points.length - 1] );
-
-          const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x000000,
-            linewidth: 1,
-            depthWrite: false
-          });
-
-          const lineGeom = new THREE.BufferGeometry().setFromPoints( points );
-          const line = new THREE.Line( lineGeom, lineMaterial);
-          line.renderOrder = 1;
-          group.add( line );
+          lineIndices.push( ...line );
 
         }
-
+      
     }
 
+    const mergeGeom = BufferGeometryUtils.mergeBufferGeometries( meshGeometries );
+    const mergeMaterial = new THREE.MeshBasicMaterial( { color: meshColor, depthWrite: false } );
+    const mergeMesh = new THREE.Mesh( mergeGeom, mergeMaterial );
+    group.add( mergeMesh );
+
+    var mergeLineGeom = new THREE.BufferGeometry();
+    mergeLineGeom.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( lineGeometries ), 3 ) );
+    mergeLineGeom.setIndex( new THREE.BufferAttribute( new Uint16Array( lineIndices ), 1 ) );
+    const lineMaterial = new THREE.LineBasicMaterial({
+
+      color: lineColor,
+      linewidth: 1,
+      depthWrite: false
+
+    });
+    const mergeLines = new THREE.LineSegments( mergeLineGeom, lineMaterial);
+    mergeLines.renderOrder = 1;
+    group.add( mergeLines );
+
     const location = this.georef.location;
-    // const location = [93125.72852, 436666.3701, 5.376];
-    
     group.translateX(- location[0]);
     group.translateY(- location[2]);
     group.translateZ( location[1] );
