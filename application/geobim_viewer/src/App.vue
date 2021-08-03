@@ -17,7 +17,7 @@
       >
         <div class="navbar-start">
           <div class="navbar-item">
-          <span class="logo-text">GEO-BIM Tool</span>
+          <span class="logo-text">GeoBIM Tool</span>
           </div>
           <div class="navbar-item tags has-addons">
             
@@ -35,19 +35,19 @@
           >
             Viewer
           </router-link>
-          <router-link
+          <!-- <router-link
             to="/documentation"
             active-class="is-active"
             class="navbar-item"
           >
             Documentation
-          </router-link>
+          </router-link> -->
           <router-link
             to="/github"
             active-class="is-active"
             class="navbar-item"
           >
-            Repository
+            Repository/documentation
           </router-link>
         </div>
       </div>
