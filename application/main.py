@@ -457,7 +457,7 @@ def overlapallbbox(id):
     
 @application.route('/analysis/<id>/setbasefloornum/<floornumber>', methods=['GET'])
 def setbasefloornum(id, floornumber):
-    analysers[id].setBaseFloornum()
+    analysers[id].setBaseFloornum(floornumber)
     return "success"
 
 @application.route('/analysis/<id>/addgeoreferencepoint/<xyz>', methods=['GET'])
@@ -470,17 +470,18 @@ def setoverhangdir(id, direction):
     analysers[id].setOverhangdir(direction)
     return "success"
 
-@application.route('/analysis/<id>/setoverlapparameters', methods=['GET'])
-def setoverlapparameters(id, x, y, z):
-    analysers[id].setOverlapParameters(x, y, z)
+@application.route('/analysis/<id>/setoverlapparameters/<s>/<dbscan>/<k>', methods=['GET'])
+def setoverlapparameters(id, s, dbscan, k):
+    analysers[id].setOverlapParameters(s, dbscan, k)
     return "success"
 
-@application.route('/analysis/<id>/overhangroads', methods=['GET'])
-def overhangroads(id):
-    guidelines = {
-            'Boompjes': 0.5,
-            'Hertekade': 0.2
-            }
+@application.route('/analysis/<id>/overhangroads/<floornum>/<guidelines>', methods=['GET'])
+def overhangroads(id, floornum, guidelines):
+
+    guidelinesParsed = {}
+    for guideline in guidelines.split('|'):
+        entry = guideline.split(": ")
+        guidelinesParsed[entry[0]] = float(entry[1])
     
     ifc_path = None
     ids = open(IDS_PATH, 'r')
@@ -491,9 +492,22 @@ def overhangroads(id):
             ifc_path = v["path"]
             break
     
-    result = analysers[id].overhangRoads(guidelines, ifc_path)
+    if floornum != "none":
+        result = analysers[id].overhangRoads(guidelinesParsed, int(floornum))
+    else:
+        result = analysers[id].overhangRoads(guidelinesParsed)
     
-    return jsonify({"check": result[0], "rogue": result[1]})
+    return jsonify(result)
+
+@application.route('/analysis/<id>/heightcheck/<max>', methods=['GET'])
+def heightcheck(id, max):
+    result = analysers[id].heightCheck(float(max))
+    return jsonify(result)
+
+@application.route('/analysis/<id>/boundarycheck', methods=['GET'])
+def boundarycheck(id):
+    result = analysers[id].boundaryCheck()
+    return jsonify(result)
 
 @application.route('/analysis/<id>/getgeoref', methods=['GET'])
 def getgeoref(id):
