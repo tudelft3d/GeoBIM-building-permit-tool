@@ -333,7 +333,7 @@ export default {
       type: Object,
       default() {
 
-         return { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false }
+         return { "fields": {}, "fieldsBig": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false }
 
         }
 
@@ -404,7 +404,7 @@ export default {
       showFilePicker: false,
       loadedId: "",
       v: undefined,
-      performanceTest: false
+      performanceTest: true
 
     };
 
@@ -441,7 +441,7 @@ export default {
 
     resetModalParams() {
 
-      this.modalParams = { "fields": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false };
+      this.modalParams = { "fields": {}, "fieldsBig": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false };
 
     },
 
@@ -921,89 +921,70 @@ export default {
   overhangRoadsSettings() {
 
     this.modalParams.title = "Roads overhang";
+    this.modalParams.fields = { "Floor number (leave empty for all floors)": "floorNumber" }
+    this.modalParams.fieldsBig = { "Guidelines (type 'streetname: maxHeight' per line)": "guidelines" };
     this.modalParams.function = "overhangRoads";
     this.modalParams.info = "Calculates the overhang in metres of all floors over the adjacent streets."
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.modalParams.input[ "guidelines" ] = "";
     this.showModal = true;
-
-    // var res = {"check":{},"rogue":{"0":[[77.57238305047628,447.4699872464535],[149.86812593256857,447.4699872464535]],"1":[[149.86812593256857,447.4699872464535],[149.86812593256857,522.8186541358758]],"2":[[149.86812593256857,522.8186541358758],[77.57238305047628,522.8186541358758]],"3":[[77.57238305047628,522.8186541358758],[77.57238305047628,447.4699872464535]]}};
-
-    // const lines = [ [ [ 60.806, -71.158 ], [ 0.307, -4.985 ] ],
-    // [ [ -17.71, -29.407 ], [ 34.321, -91.066 ] ],
-    // [ [ 38.041, -90.902 ], [ 58.438, -71.908 ] ],
-    // [ [ 0.281, -8.702 ], [ -20.157, -24.546 ] ]
-    // ];
-
-    // var threeGroup = new THREE.Group();
-
-    // for ( const [key, line] of Object.entries(lines) ) {
-
-
-    //   var points = [];
-    //   // points.push(new THREE.Vector3( line[0][0], 0, line[0][1]) );
-    //   // points.push(new THREE.Vector3( line[1][0], 0, line[1][1]) );
-    //   // points.push(new THREE.Vector3( line[0][0], 1, line[0][1]) );
-    //   points.push(new THREE.Vector3( 0, 0, 0) );
-    //   points.push(new THREE.Vector3( 0, 50, 0) );
-
-    //   console.log(points);
-
-    //   const lineMaterial = new THREE.LineBasicMaterial({
-    //     color: 0xff0000,
-    //     linewidth: 2
-    //   });
-
-    //   const lineGeom = new THREE.BufferGeometry().setFromPoints( points );
-      
-    //   const line2 = new THREE.Line( lineGeom, lineMaterial);
-    //   console.log(line2);
-    //   // line.renderOrder = 1;
-    //   // threeGroup.add( line2 );
-
-    //   break;
-    // }
-
-    // this.v.loadGroup( threeGroup );
 
   },
 
   async overhangRoads() {
 
-    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangroads" )
+    if ( this.modalParams.input[ "floorNumber" ] == "" ) {
+      var floornum = "none";
+    } else {
+      var floornum = this.modalParams.input[ "floorNumber" ];
+    }
+
+    const guidelines = this.modalParams.input.guidelines.replace( '\n', '|' );
+
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangroads/" + floornum + "/" + guidelines )
       .then(function(r) { return r.json(); })
       .then(function(res) {
 
-        console.log( res );
-        // this.modalParams.result = JSON.stringify(res);
-        this.modalParams.result = JSON.stringify({"Boompjes": ["Pass", "Admissible overhang: 5", "Overhang: 4.23"],
-"Hertekade": ["Fail", "Admissible overhang: 10", "Overhang: 12.55"]});
-        this.v.loadLine(this.georef);
+        this.modalParams.result = JSON.stringify(res, null, 2);
 
-        // var threeGroup = new THREE.Group();
+        for ( const [ key, values ] of Object.entries( res[ "all_checks" ][ 0 ] ) ) {
 
-        // for ( const [key, line] of Object.entries(res.rogue) ) {
+          var linestring = values[ 3 ];
+          var coordinatesString = linestring.split( "(" )[ 1 ].slice( 0, -1 ).split( ", " );
+          var coordinates = [];
+          var p1 = coordinatesString[ 0 ].split(" ");
+          var p2 = coordinatesString[ 1 ].split(" ");
+          var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
+          
+          var pass = values[ 0 ];
+          if ( pass == "Pass" ) {
 
-        //   line[0] *= 1000;
-        //   line[1] *= 1000;
+            var color = 0x00ff00;
 
-        //   const length = Math.sqrt( Math.pow( line[1][0] - line[0][0] ) + Math.pow( line[1][1] - line[0][1] ) );
-        //   const width = 3;
-        //   const shape = new THREE.Shape();
-        //   shape.moveTo( line[0][0], line[0][1] );
-        //   shape.lineTo( line[1][0], line[1][0] );
-        //   const extrudeSettings = {
-        //     steps: 1,
-        //     depth: 10
-        //   }
+          } else {
 
-        //   const geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
-        //   const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-        //   const mesh = new THREE.Mesh( geometry, material ) ;
-        //   console.log(mesh);
-        //   // group.add( mesh );
-        // }
+            var color = 0xff0000;
 
-        // this.v.loadGroup( threeGroup );
-        // // this.modalParams.result = JSON.stringify(res, null, 2 );
+          }
+
+          this.v.loadLine(this.georef, coordinates, color);
+
+        }
+
+        for ( const [ key, value ] of Object.entries( res[ "rogue_checks" ][ 0 ] ) ) {
+
+          var linestring = value;
+          var coordinatesString = linestring.split( "(" )[ 1 ].slice( 0, -1 ).split( ", " );
+          var coordinates = [];
+          var p1 = coordinatesString[ 0 ].split(" ");
+          var p2 = coordinatesString[ 1 ].split(" ");
+          var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
+
+          var color = 0x000000;
+
+          this.v.loadLine(this.georef, coordinates, color);
+
+        }
 
     }.bind( this ));
 
@@ -1013,7 +994,7 @@ export default {
 
     this.modalParams.title = "Get height";
     this.modalParams.function = "height";
-    this.modalParams.info = "Calculates the height of the building, with the base height being the highest height of the adjacent streets.";
+    this.modalParams.info = "Calculates the height of the building";
     this.showModal = true;
 
   },
@@ -1031,9 +1012,80 @@ export default {
 
   },
 
+  heightNewSettings() {
+
+    this.modalParams.title = "Get height";
+    this.modalParams.function = "heightNew";
+    this.modalParams.fields = {"Maximum height": "maxHeight"}
+    this.modalParams.input[ "maxHeight" ] = "";
+    this.modalParams.info = "Calculates the height of the building, with the base height being the highest height of the adjacent streets.";
+    this.showModal = true;
+
+  },
+
+  async heightNew() {
+
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/heightcheck/" + this.modalParams.input.maxHeight )
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = JSON.stringify(res, null, 2 );
+
+        const height = this.modalParams.input.maxHeight;
+        const wkt = res[ "wkt" ];
+
+        if ( res[ "height_check" ][ 0 ] == "Pass" ) {
+          var color = 0x00ff00;
+        } else {
+          var color = 0xff0000;
+        }
+
+        var coordinates = [];
+        var coordinatesString = wkt.split("(")[ 2 ].split(", ").slice( 0, -2 );
+        console.log(coordinatesString);
+        for ( var i = 0; i < coordinatesString.length; i++ ) {
+
+          const split = coordinatesString[i].split(" ");
+          coordinates.push( [ parseFloat( split[0] ), parseFloat( split[1] ) ] );
+
+        }
+
+        var geom = earcut.flatten([coordinates]);
+        var triangles = earcut(geom.vertices, geom.holes, geom.dimensions);
+
+        var vertices3d = [];
+        for ( var t = 0; t < triangles.length; t++ ) {
+
+          const v = triangles[t];
+          vertices3d.push(geom.vertices[v*2], height, - geom.vertices[v*2+1]);
+
+        }
+
+        var threeGeom = new THREE.BufferGeometry();
+        threeGeom.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices3d, 3 ) );
+
+        const material = new THREE.MeshBasicMaterial( { color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.8 } );
+
+        const mesh = new THREE.Mesh( threeGeom, material );
+        var group = new THREE.Group();
+        group.add( mesh );
+
+        const location = this.georef.location;
+        
+        group.translateX(- location[0]);
+        group.translateY(- location[2]);
+        group.translateZ( location[1] );
+
+        this.v.loadGroup( group );
+
+    }.bind( this ));
+
+  },
+
   baseHeightSettings() {
 
-    this.modalParams.title = "Get base height";
+    this.modalParams.title = "Get floor height";
     this.modalParams.fields = {"Floor number": "floorNumber"}
     this.modalParams.function = "baseHeight";
     this.modalParams.info = "";
@@ -1069,6 +1121,28 @@ export default {
   async overlapSingle() {
 
     return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overlapsingle/" + this.modalParams.input[ "floorNumber" ] )
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+
+        console.log( res );
+        this.modalParams.result = JSON.stringify(res, null, 2 );
+
+    }.bind( this ));
+
+  },
+
+  parcelLimitSettings() {
+
+    this.modalParams.title = "Parcel limit check";
+    this.modalParams.function = "parcelLimit";
+    this.modalParams.info = "Checks if the building fits within the parcel limit.";
+    this.showModal = true;
+
+  },
+
+  async parcelLimit() {
+
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/boundarycheck" )
       .then(function(r) { return r.json(); })
       .then(function(res) {
 
@@ -1165,6 +1239,7 @@ export default {
       .then(function(res) {
 
         console.log( res );
+        this.modalParams.result = res;
 
     }.bind( this ));
 
@@ -1185,11 +1260,12 @@ export default {
 
   setOverlapParams() {
 
-    fetch( this.baseURL + "/analysis/" + this.loadedId + "/setbasefloornum/" + this.modalParams.input[ "floorNumber" ] )
+    fetch( this.baseURL + "/analysis/" + this.loadedId + "/setoverlapparameters/" + this.modalParams.input[ "s" ] + "/" + this.modalParams.input[ "dbscan" ] + "/" + this.modalParams.input[ "k" ] )
       .then(function(r) { return r.text(); })
       .then(function(res) {
 
         console.log( res );
+        this.modalParams.result = res;
 
     }.bind( this ));
 
@@ -1225,7 +1301,7 @@ export default {
     this.modalParams.function = "parkingUnits";
     this.modalParams.info = "Calculate parking requirements. Upload of XLSX file currently not supported.";
     this.modalParams.input[ "zoneType" ] = "";
-    this.modalParams.file = true;
+    // this.modalParams.file = true;
     this.showModal = true;
 
   },
