@@ -35,8 +35,8 @@
 
               <a class="navbar-item">
 
-                <input type="checkbox" id="checkbox" v-model="checked" @change="performanceTest = !performanceTest">
-                <label for="checkbox">Performance test</label>
+                <input type="checkbox" id="checkbox" v-model="checked" checked @change="performanceTest = !performanceTest">
+                <label for="checkbox">Performance improvement</label>
                 
               </a>
 
@@ -81,9 +81,9 @@
                 Set base floor number
                 </a>
 
-                <a class="navbar-item" @click="addGeoreferencePointSettings()">
+                <!-- <a class="navbar-item" @click="addGeoreferencePointSettings()">
                 Add georeference point
-                </a>
+                </a> -->
 
                 <!-- <a class="navbar-item" @click="hoi()">
                 Set overhang direction
@@ -142,7 +142,7 @@
                 </a>
 
                 <a class="navbar-item" @click="overhangRoadsSettings()">
-                All floors overhang (roads)
+                Floors overhang (roads)
                 </a>
 
             </div>
@@ -161,8 +161,12 @@
                 Height
                 </a>
 
+                <a class="navbar-item" @click="heightNewSettings()">
+                Height (roads)
+                </a>
+
                 <a class="navbar-item" @click="baseHeightSettings()">
-                Get base height
+                Get floor height
                 </a>
               
             </div>
@@ -173,35 +177,25 @@
             class="navbar-item has-dropdown is-hoverable"
           >
             <a class="navbar-link">
-              WKT
+              Other analysis
             </a>
             <div class="navbar-dropdown">
 
                 <a class="navbar-item" @click="wktFootprintSettings">
-                Write floor footprint to WKT
+                  Write floor footprint to WKT
                 </a>
-              
-            </div>
-
-          </div>
-
-          <div
-            class="navbar-item has-dropdown is-hoverable"
-          >
-            <a class="navbar-link">
-              Parking
-            </a>
-            <div class="navbar-dropdown">
 
                 <a class="navbar-item" @click="parkingUnitsSettings()">
-                Parking units calculation
+                  Parking units calculation
+                </a>
+
+                <a class="navbar-item" @click="parcelLimitSettings()">
+                  Parcel limit check
                 </a>
               
             </div>
 
           </div>
-
-
 
     <b-modal
       v-model="showModal"
@@ -227,6 +221,11 @@
             <b-field v-for="(input, label) in modalParams.fields" v-bind:key="(input, label)" v-bind:label="label">
 
               <b-input v-model="modalParams.input[ input ]"></b-input>
+            </b-field>
+
+            <b-field v-for="(input, label) in modalParams.fieldsBig" v-bind:key="(input, label)" v-bind:label="label">
+
+              <b-input type="textarea" v-model="modalParams.input[ input ]"></b-input>
             </b-field>
 
             <b-field v-if="modalParams.file" label="Upload file">
