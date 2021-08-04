@@ -35,7 +35,7 @@
 
               <a class="navbar-item">
 
-                <input type="checkbox" id="checkbox" v-model="checked" checked @change="performanceTest = !performanceTest">
+                <input type="checkbox" id="checkbox" checked @change="performanceTest = !performanceTest">
                 <label for="checkbox">Performance improvement</label>
                 
               </a>
@@ -45,29 +45,25 @@
 
           </div>
 
-          <!-- <div
+          <div
             class="navbar-item has-dropdown is-hoverable"
           >
             <a class="navbar-link">
-              View
+              Clear
             </a>
             <div class="navbar-dropdown">
 
-                <a class="navbar-item" @click="clearViewer()">
+              <a class="navbar-item" @click="clearViewer()">
                 Clear viewer
-                </a>
+              </a>
 
-                <a class="navbar-item" @click="hoi()">
-                Show floor
-                </a>
-
-                <a class="navbar-item" @click="hoi()">
-                Show all floors
-                </a>
+              <a class="navbar-item" @click="clearAnalysisVisualisation()">
+                Clear analysis visualisation
+              </a>
               
             </div>
 
-          </div> -->
+          </div>
 
           <div
             class="navbar-item has-dropdown is-hoverable"
@@ -314,6 +310,27 @@ import earcut from 'earcut';
 import * as THREE from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
+function initialData() {
+
+  return {
+
+      showModal: false,
+      showFilePicker: false,
+      loadedId: "",
+      v: undefined,
+      performanceTest: true,
+      availableFiles: [],
+      modalParams: { "fields": {}, "fieldsBig": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false },
+      permitParams: {},
+      georef: {
+          "direction": [ 0, 0, 0 ], 
+          "location": [ 0, 0, 0 ]
+          },
+
+  }
+
+}
+
 export default {
   name: 'Viewer',
 
@@ -329,28 +346,6 @@ export default {
       default: "result"
     },
 
-    modalParams: {
-
-      type: Object,
-      default() {
-
-         return { "fields": {}, "fieldsBig": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false }
-
-        }
-
-    },
-
-    permitParams: {
-
-      type: Object,
-      default() {
-
-        return {}
-
-      }
-
-    },
-
     cameraParams: {
 
       type: Object,
@@ -362,52 +357,11 @@ export default {
 
     },
 
-    availableFiles: {
-
-      type: Array,
-      default() {
-
-        return [];
-
-      }
-
-    },
-
-    georef: {
-
-      type: Object,
-      default() {
-
-        return {
-          "direction": [
-            0, 
-            0, 
-            0
-          ], 
-          "location": [
-            0, 
-            0, 
-            0
-          ]
-          };
-
-      }
-
-    }
-
   },
 
   data() {
 
-    return {
-
-      showModal: false,
-      showFilePicker: false,
-      loadedId: "",
-      v: undefined,
-      performanceTest: true
-
-    };
+    return initialData();
 
   },
 
@@ -433,16 +387,21 @@ export default {
 
     clearViewer() {
 
-      this.resetModalParams();
-      this.loadedId = "",
-      this.v = undefined;
-      this.permitParams = {};
+      this.$data.v.bimSurfer3D.destroy();
+      this.$data.v.destroy();
+      Object.assign( this.$data, initialData() );
+
+    },
+
+    clearAnalysisVisualisation() {
+
+      this.$data.v.clearAnalysisVisualisation();
 
     },
 
     resetModalParams() {
 
-      this.modalParams = { "fields": {}, "fieldsBig": {}, "title": "", "info": "", "result": "", "function": "", "input": {}, "file": false };
+      Object.assign( this.$data.modalParams, initialData().modalParams );
 
     },
 
@@ -670,6 +629,7 @@ export default {
         v.loadTreeView('top');
 
         this.v = v;
+        this.$data.v = v;
         this.v.bimSurfer3D.setCameraControls( this.cameraParams );
 
         // this.v.loadShp( "../../../../shp.js/BRK_SelectieCentrum.shp", this.georef );
@@ -1020,17 +980,9 @@ export default {
           var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
           
           var pass = values[ 0 ];
-          if ( pass == "Pass" ) {
+          var color = ( pass == "Pass" ) ? 0x00ff00 : 0xff0000;
 
-            var color = 0x00ff00;
-
-          } else {
-
-            var color = 0xff0000;
-
-          }
-
-          this.v.loadLine(this.georef, coordinates, color);
+          this.v.loadLine( this.georef, coordinates, color, "overhangLine" );
 
         }
 
@@ -1045,7 +997,7 @@ export default {
 
           var color = 0x000000;
 
-          this.v.loadLine(this.georef, coordinates, color);
+          this.v.loadLine(this.georef, coordinates, color, "overhangLine" );
 
         }
 
@@ -1132,6 +1084,7 @@ export default {
 
         const mesh = new THREE.Mesh( threeGeom, material );
         var group = new THREE.Group();
+        group.name = "heightPlane";
         group.add( mesh );
 
         const location = this.georef.location;
