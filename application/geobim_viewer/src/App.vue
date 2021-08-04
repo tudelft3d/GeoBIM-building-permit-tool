@@ -17,7 +17,7 @@
       >
         <div class="navbar-start">
           <div class="navbar-item">
-          <span class="logo-text">GeoBIM Tool</span>
+          <span class="logo-text">Vergunningscontrole-service-tool</span>
           </div>
           <div class="navbar-item tags has-addons">
             
@@ -35,13 +35,6 @@
           >
             Viewer
           </router-link>
-          <!-- <router-link
-            to="/documentation"
-            active-class="is-active"
-            class="navbar-item"
-          >
-            Documentation
-          </router-link> -->
           <router-link
             to="/github"
             active-class="is-active"
