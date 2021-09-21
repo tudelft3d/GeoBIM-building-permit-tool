@@ -141,6 +141,10 @@
                 Floors overhang (roads)
                 </a>
 
+                <a class="navbar-item is-dark" @click="overhangRoadsAlphaShapeSettings()" id="overhangAlphaShape">
+                Floors overhang (roads - alpha shape)
+                </a>
+
             </div>
 
           </div>
@@ -1011,6 +1015,41 @@ export default {
 
   },
 
+    overhangRoadsAlphaShapeSettings() {
+
+    this.modalParams.title = "Roads overhang (alpha shape implementation)";
+    this.modalParams.fields = { "Floor number (leave empty for all floors)": "floorNumber" }
+    this.modalParams.fieldsBig = { "Guidelines (type 'streetname: maxHeight' per line).\nFor example:\n\nBoompjes: 5\nHertekade: 3": "guidelines" };
+    this.modalParams.function = "overhangRoadsAlphaShape";
+    this.modalParams.info = "Calculates the overhang in metres of all floors over the adjacent streets."
+    this.modalParams.input[ "floorNumber" ] = "";
+    this.modalParams.input[ "guidelines" ] = "";
+    this.showModal = true;
+
+  },
+
+  async overhangRoadsAlphaShape() {
+
+    if ( this.modalParams.input[ "floorNumber" ] == "" ) {
+      var floornum = "none";
+    } else {
+      var floornum = this.modalParams.input[ "floorNumber" ];
+    }
+
+    const guidelines = this.modalParams.input.guidelines.replace( '\n', '|' );
+
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangroadsalphashape/" + floornum + "/" + guidelines )
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+
+        console.log( res );
+
+        this.modalParams.result = JSON.stringify(res, null, 2);
+
+    }.bind( this ));
+
+  },
+
   heightSettings() {
 
     this.modalParams.title = "Get height";
@@ -1424,7 +1463,7 @@ export default {
 
     }
 
-    #overhang, #height {
+    #overhang, #overhangAlphaShape, #height {
 
       background-color: LightBlue;
 

@@ -131,9 +131,9 @@ def process_upload_multiple(files, callback_url=None):
         paths.append(path)
         file_id += 1
         m.files.append(database.file(id, ''))
-        #analyser = geobim.analyser()
-        #analyser.load(path)
-        #analysers[id] = analyser
+        analyser = geobim.analyser()
+        analyser.load(path)
+        analysers[id] = analyser
 
     session.commit()
     session.close()
@@ -496,6 +496,30 @@ def overhangroads(id, floornum, guidelines):
         result = analysers[id].overhangRoads(guidelinesParsed, int(floornum))
     else:
         result = analysers[id].overhangRoads(guidelinesParsed)
+    
+    return jsonify(result)
+
+@application.route('/analysis/<id>/overhangroadsalphashape/<floornum>/<guidelines>', methods=['GET'])
+def overhangroadsalphashape(id, floornum, guidelines):
+
+    guidelinesParsed = {}
+    for guideline in guidelines.split('|'):
+        entry = guideline.split(": ")
+        guidelinesParsed[entry[0]] = float(entry[1])
+    
+    ifc_path = None
+    ids = open(IDS_PATH, 'r')
+    settings = json.load(ids)
+    ids.close()
+    for k, v in settings.items():
+        if v["id"] == id:
+            ifc_path = v["path"]
+            break
+    
+    if floornum != "none":
+        result = analysers[id].overhangRoadsAlphaShape(guidelinesParsed, int(floornum))
+    else:
+        result = analysers[id].overhangRoadsAlphaShape(guidelinesParsed)
     
     return jsonify(result)
 
