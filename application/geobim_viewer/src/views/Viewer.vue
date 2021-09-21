@@ -137,7 +137,7 @@
                 All floors overhang
                 </a>
 
-                <a class="navbar-item" @click="overhangRoadsSettings()">
+                <a class="navbar-item is-dark" @click="overhangRoadsSettings()" id="overhang">
                 Floors overhang (roads)
                 </a>
 
@@ -157,7 +157,7 @@
                 Height
                 </a>
 
-                <a class="navbar-item" @click="heightNewSettings()">
+                <a class="navbar-item" @click="heightNewSettings()" id="height">
                 Height (roads)
                 </a>
 
@@ -210,7 +210,7 @@
           />
         </header>
         <section class="modal-card-body">
-          <div class="content">
+          <div class="content" style="white-space: pre-line">
 
             {{ modalParams.info }}
 
@@ -624,7 +624,7 @@ export default {
             v.setSpinner({url: window.SPINNER_URL});
         }
         v.load2d();
-        v.load3d(this.performanceTest, this.georef);
+        v.load3d(this.performanceTest, this.georef, undefined, undefined, id);
         v.loadMetadata('middle');
         v.loadTreeView('top');
 
@@ -945,7 +945,7 @@ export default {
 
     this.modalParams.title = "Roads overhang";
     this.modalParams.fields = { "Floor number (leave empty for all floors)": "floorNumber" }
-    this.modalParams.fieldsBig = { "Guidelines (type 'streetname: maxHeight' per line)": "guidelines" };
+    this.modalParams.fieldsBig = { "Guidelines (type 'streetname: maxHeight' per line).\nFor example:\n\nBoompjes: 5\nHertekade: 3": "guidelines" };
     this.modalParams.function = "overhangRoads";
     this.modalParams.info = "Calculates the overhang in metres of all floors over the adjacent streets."
     this.modalParams.input[ "floorNumber" ] = "";
@@ -968,36 +968,42 @@ export default {
       .then(function(r) { return r.json(); })
       .then(function(res) {
 
+        console.log( res );
+
         this.modalParams.result = JSON.stringify(res, null, 2);
 
-        for ( const [ key, values ] of Object.entries( res[ "all_checks" ][ 0 ] ) ) {
+        for ( let i = 0; i < res[ "all_checks" ].length; i++ ) {
 
-          var linestring = values[ 3 ];
-          var coordinatesString = linestring.split( "(" )[ 1 ].slice( 0, -1 ).split( ", " );
-          var coordinates = [];
-          var p1 = coordinatesString[ 0 ].split(" ");
-          var p2 = coordinatesString[ 1 ].split(" ");
-          var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
-          
-          var pass = values[ 0 ];
-          var color = ( pass == "Pass" ) ? 0x00ff00 : 0xff0000;
+          for ( const [ key, values ] of Object.entries( res[ "all_checks" ][ i ] ) ) {
 
-          this.v.loadLine( this.georef, coordinates, color, "overhangLine" );
+            var linestring = values[ 3 ];
+            var coordinatesString = linestring.split( "(" )[ 1 ].slice( 0, -1 ).split( ", " );
+            var coordinates = [];
+            var p1 = coordinatesString[ 0 ].split(" ");
+            var p2 = coordinatesString[ 1 ].split(" ");
+            var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
+            
+            var pass = values[ 0 ];
+            var color = ( pass == "Pass" ) ? 0x00ff00 : 0xff0000;
 
-        }
+            this.v.loadLine( this.georef, coordinates, color, "overhangLine" );
 
-        for ( const [ key, value ] of Object.entries( res[ "rogue_checks" ][ 0 ] ) ) {
+          }
 
-          var linestring = value;
-          var coordinatesString = linestring.split( "(" )[ 1 ].slice( 0, -1 ).split( ", " );
-          var coordinates = [];
-          var p1 = coordinatesString[ 0 ].split(" ");
-          var p2 = coordinatesString[ 1 ].split(" ");
-          var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
+          for ( const [ key, value ] of Object.entries( res[ "rogue_checks" ][ i ] ) ) {
 
-          var color = 0x000000;
+            var linestring = value;
+            var coordinatesString = linestring.split( "(" )[ 1 ].slice( 0, -1 ).split( ", " );
+            var coordinates = [];
+            var p1 = coordinatesString[ 0 ].split(" ");
+            var p2 = coordinatesString[ 1 ].split(" ");
+            var coordinates = [ [ [ parseFloat( p1[0] ), - parseFloat( p1[1] ) ], [ parseFloat( p2[0] ), - parseFloat( p2[1] ) ] ] ];
 
-          this.v.loadLine(this.georef, coordinates, color, "overhangLine" );
+            var color = 0x000000;
+
+            this.v.loadLine(this.georef, coordinates, color, "overhangLine" );
+
+          }
 
         }
 
@@ -1415,6 +1421,12 @@ export default {
 
       min-height: unset;
       height: 30px;
+
+    }
+
+    #overhang, #height {
+
+      background-color: LightBlue;
 
     }
 
