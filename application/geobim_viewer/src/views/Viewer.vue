@@ -60,6 +60,10 @@
               <a class="navbar-item" @click="clearAnalysisVisualisation()">
                 Clear analysis visualisation
               </a>
+
+              <a class="navbar-item" @click="toggleIfc()">
+                Toggle IFC
+              </a>
               
             </div>
 
@@ -400,6 +404,12 @@ export default {
     clearAnalysisVisualisation() {
 
       this.$data.v.clearAnalysisVisualisation();
+
+    },
+
+    toggleIfc() {
+
+      this.$data.v.toggleIfc();
 
     },
 
@@ -1046,7 +1056,39 @@ export default {
 
         this.modalParams.result = JSON.stringify(res, null, 2);
 
+        const floors = res.all_triangles.length;
+
+
+        for ( let i = 0; i < res.all_triangles.length; i++ ) {
+
+          const points = res.all_points[ i ];
+          const triangles = res.all_triangles[ i ];
+          const mesh = this.trianglesToMesh( points, triangles, this.georef.location, this.georef.direction );
+
+          this.v.loadGroup( mesh );
+
+        }
+
     }.bind( this ));
+
+  },
+
+  trianglesToMesh( points, triangles, position, direction ) {
+
+    const geometry = new THREE.BufferGeometry();
+    
+    geometry.setIndex( triangles.flat() );
+    geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( points.flat(), 3 ) );
+
+    const color = Math.random() * 0xffffff;
+    console.log( color );
+    const material = new THREE.MeshBasicMaterial( { color: color } );
+    const mesh = new THREE.Mesh( geometry, material );
+
+    mesh.rotateX( - Math.PI / 2 );
+    mesh.rotateZ( Math.atan2( this.georef.direction[ 1 ], this.georef.direction[ 0 ] ) );
+    
+    return mesh;
 
   },
 
