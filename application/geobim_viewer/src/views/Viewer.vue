@@ -1058,16 +1058,38 @@ export default {
 
         const floors = res.all_triangles.length;
 
+        for ( let i = 0; i < res.all_checks.length; i++ ) {
 
-        for ( let i = 0; i < res.all_triangles.length; i++ ) {
+          for ( const [ key, values ] of Object.entries( res.all_checks[ i ] ) ) {
 
-          const points = res.all_points[ i ];
-          const triangles = res.all_triangles[ i ];
-          const mesh = this.trianglesToMesh( points, triangles, this.georef.location, this.georef.direction );
+            const wkt = values[ 3 ];
+            const geometry = this.wktToGeom( wkt );
+            const color = Math.random() * 0xffffff;
+            const material = new THREE.MeshBasicMaterial( { color: color } );
+            const mesh = new THREE.Mesh( geometry, material );
 
-          this.v.loadGroup( mesh );
+            mesh.rotateY( Math.atan2( this.georef.direction[ 1 ], this.georef.direction[ 0 ] ) );
+
+            const points = res.all_points[ i ];
+            const triangles = res.all_triangles[ i ];
+            const mesh2 = this.trianglesToMesh( points, triangles, this.georef.location, this.georef.direction );
+
+            this.v.loadGroup( mesh );
+            this.v.loadGroup( mesh2 );
+
+          }
 
         }
+
+        // for ( let i = 0; i < res.all_triangles.length; i++ ) {
+
+        //   const points = res.all_points[ i ];
+        //   const triangles = res.all_triangles[ i ];
+        //   const mesh = this.trianglesToMesh( points, triangles, this.georef.location, this.georef.direction );
+
+        //   this.v.loadGroup( mesh );
+
+        // }
 
     }.bind( this ));
 
@@ -1081,7 +1103,6 @@ export default {
     geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( points.flat(), 3 ) );
 
     const color = Math.random() * 0xffffff;
-    console.log( color );
     const material = new THREE.MeshBasicMaterial( { color: color } );
     const mesh = new THREE.Mesh( geometry, material );
 
@@ -1114,6 +1135,64 @@ export default {
 
   },
 
+  wktToGeom( wkt, height ) {
+
+    const type = wkt.split( "(" )[ 0 ].trim().toUpperCase();
+    var threeGeom = new THREE.BufferGeometry();
+    var vertices3d = [];
+    var coordinates = [];
+
+    if ( type == "POLYGON" ) {
+
+      var coordinatesString = wkt.split("(")[ 2 ].split(", ").slice( 0, -2 );
+
+      for ( var i = 0; i < coordinatesString.length; i++ ) {
+
+        const split = coordinatesString[i].split(" ");
+        coordinates.push( [ parseFloat( split[0] ), parseFloat( split[1] ) ] );
+
+      }
+
+      var geom = earcut.flatten( [ coordinates ] );
+      var triangles = earcut(geom.vertices, geom.holes, geom.dimensions);
+
+      for ( var t = 0; t < triangles.length; t++ ) {
+
+        const v = triangles[ t ];
+        vertices3d.push( geom.vertices[ v * 2 ], height, - geom.vertices[ v * 2 + 1 ] );
+
+      }
+
+    } else if ( type == "TIN" ) {
+
+      const re = /\([^)]*\)|\[[^\]]*\]/g;
+      var coordinatesString = wkt.match( re );
+
+      for ( var i = 0; i < coordinatesString.length; i++ ) {
+
+        var str = coordinatesString[ i ];
+        str = str.replaceAll( '(', '' );
+        str = str.replaceAll( ')', '' );
+        var split = str.split( ", " );
+
+        for ( var t = 0; t < split.length - 1; t ++ ) {
+
+          var triangle = split[ t ];
+          triangle = triangle.split( " " );
+          vertices3d.push( parseFloat( triangle[ 0 ] ), parseFloat( triangle[ 2 ] ), parseFloat( triangle[ 1 ] ) );
+
+        }
+
+      }
+
+    }
+
+    threeGeom.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices3d, 3 ) );
+
+    return threeGeom;
+
+  },
+
   heightNewSettings() {
 
     this.modalParams.title = "Get height";
@@ -1143,33 +1222,11 @@ export default {
           var color = 0xff0000;
         }
 
-        var coordinates = [];
-        var coordinatesString = wkt.split("(")[ 2 ].split(", ").slice( 0, -2 );
-        console.log(coordinatesString);
-        for ( var i = 0; i < coordinatesString.length; i++ ) {
-
-          const split = coordinatesString[i].split(" ");
-          coordinates.push( [ parseFloat( split[0] ), parseFloat( split[1] ) ] );
-
-        }
-
-        var geom = earcut.flatten([coordinates]);
-        var triangles = earcut(geom.vertices, geom.holes, geom.dimensions);
-
-        var vertices3d = [];
-        for ( var t = 0; t < triangles.length; t++ ) {
-
-          const v = triangles[t];
-          vertices3d.push(geom.vertices[v*2], height, - geom.vertices[v*2+1]);
-
-        }
-
-        var threeGeom = new THREE.BufferGeometry();
-        threeGeom.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices3d, 3 ) );
+        const geom = this.wktToGeom( wkt, height );
 
         const material = new THREE.MeshBasicMaterial( { color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.8 } );
 
-        const mesh = new THREE.Mesh( threeGeom, material );
+        const mesh = new THREE.Mesh( geom, material );
         var group = new THREE.Group();
         group.name = "heightPlane";
         group.add( mesh );
