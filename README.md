@@ -22,6 +22,14 @@ You probably want to change the amount of gunicorn and database workers in  `doc
 3. `export FLASK_ENV=development`
 4. `flask run` in `application/`
 
+### Deployment (godzilla)
+In `/var/www/ifc-pipeline`:
+
+`sudo docker-compose up -d` (add `--build` if there are changes to the app)
+
+`sudo docker build -t geobim_tool_vue .` and `sudo docker run -d -it -p 8082:80 --rm --name dockerize-geobim_tool_vue geobim_tool_vue` in `ifc-pipeline/application/geobim_viewer`
+
+
 ### Possible issues
 
 For developing the GEOBIM_Tool, geos Python library should be of version 3.8.1. Newer can cause issues.
