@@ -1062,19 +1062,19 @@ export default {
 
           for ( const [ key, values ] of Object.entries( res.all_checks[ i ] ) ) {
 
-            const wkt = values[ 3 ];
-            const geometry = this.wktToGeom( wkt );
-            const color = Math.random() * 0xffffff;
-            const material = new THREE.MeshBasicMaterial( { color: color } );
-            const mesh = new THREE.Mesh( geometry, material );
+            // const wkt = values[ 3 ];
+            // const geometry = this.wktToGeom( wkt );
+            // const color = Math.random() * 0xffffff;
+            // const material = new THREE.MeshBasicMaterial( { color: color } );
+            // const mesh = new THREE.Mesh( geometry, material );
 
-            mesh.rotateY( Math.atan2( this.georef.direction[ 1 ], this.georef.direction[ 0 ] ) );
+            // mesh.rotateY( Math.atan2( this.georef.direction[ 1 ], this.georef.direction[ 0 ] ) );
 
             const points = res.all_points[ i ];
             const triangles = res.all_triangles[ i ];
             const mesh2 = this.trianglesToMesh( points, triangles, this.georef.location, this.georef.direction );
 
-            this.v.loadGroup( mesh );
+            // this.v.loadGroup( mesh );
             this.v.loadGroup( mesh2 );
 
           }
