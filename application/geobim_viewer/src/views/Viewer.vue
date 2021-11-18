@@ -1028,11 +1028,12 @@ export default {
     overhangRoadsAlphaShapeSettings() {
 
     this.modalParams.title = "Roads overhang (alpha shape implementation)";
-    this.modalParams.fields = { "Floor number (leave empty for all floors)": "floorNumber" }
+    this.modalParams.fields = { "Floor number (leave empty for all floors)": "floorNumber", "Alpha value": "alphaValue" }
     this.modalParams.fieldsBig = { "Guidelines (type 'streetname: maxHeight' per line).\nFor example:\n\nBoompjes: 5\nHertekade: 3": "guidelines" };
     this.modalParams.function = "overhangRoadsAlphaShape";
     this.modalParams.info = "Calculates the overhang in metres of all floors over the adjacent streets."
     this.modalParams.input[ "floorNumber" ] = "";
+    this.modalParams.input[ "alphaValue" ] = "";
     this.modalParams.input[ "guidelines" ] = "";
     this.showModal = true;
 
@@ -1046,9 +1047,10 @@ export default {
       var floornum = this.modalParams.input[ "floorNumber" ];
     }
 
+    const alphaValue = this.modalParams.input[ "alphaValue" ];
     const guidelines = this.modalParams.input.guidelines.replace( '\n', '|' );
 
-    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangroadsalphashape/" + floornum + "/" + guidelines )
+    return fetch( this.baseURL + "/analysis/" + this.loadedId + "/overhangroadsalphashape/" + floornum + "/" + alphaValue + "/" + guidelines )
       .then(function(r) { return r.json(); })
       .then(function(res) {
 

@@ -499,9 +499,10 @@ def overhangroads(id, floornum, guidelines):
     
     return jsonify(result)
 
-@application.route('/analysis/<id>/overhangroadsalphashape/<floornum>/<guidelines>', methods=['GET'])
-def overhangroadsalphashape(id, floornum, guidelines):
+@application.route('/analysis/<id>/overhangroadsalphashape/<floornum>/<alpha>/<guidelines>', methods=['GET'])
+def overhangroadsalphashape(id, floornum, alpha, guidelines):
 
+    alpha = float(alpha)
     guidelinesParsed = {}
     for guideline in guidelines.split('|'):
         entry = guideline.split(": ")
@@ -517,9 +518,9 @@ def overhangroadsalphashape(id, floornum, guidelines):
             break
     
     if floornum != "none":
-        result = analysers[id].overhangRoadsAlphaShape(guidelinesParsed, int(floornum))
+        result = analysers[id].overhangRoadsAlphaShape(guidelinesParsed, alpha, int(floornum))
     else:
-        result = analysers[id].overhangRoadsAlphaShape(guidelinesParsed)
+        result = analysers[id].overhangRoadsAlphaShape(guidelinesParsed, alpha)
     
     return jsonify(result)
 
